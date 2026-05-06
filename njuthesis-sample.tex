@@ -123,11 +123,68 @@
 %   \include{chapters/environments}
 
 \chapter{引言}
-
-\section{量子计算}
-
-John Preskill 认为我们现在处于“含噪声的中型量子时代”。\cite{preskill2018}
-量子位的不稳定性和有限的量子比特数量限制了量子计算机的复杂度和纠错能力。
+\section{研究背景与意义}
+\section{国内外研究现状}
+\section{研究问题与挑战}
+\section{研究目标与主要贡献}
+\section{论文结构安排}
+\chapter{相关理论与技术基础}
+\section{大语言模型与代码生成}
+\subsection{Transformer 与自回归生成机制}
+\subsection{代码生成任务特点与难点}
+\section{参数高效微调技术}
+\subsection{全参数微调与局限}
+\subsection{LoRA 原理与优势}
+\section{链式思维推理方法}
+\subsection{Zero-shot CoT 机制}
+\subsection{Few-shot CoT 机制}
+\subsection{CoT 在算法代码生成中的作用}
+\section{代码生成评测指标}
+\subsection{执行正确性评测}
+\subsection{Pass@k 指标定义与解释}
+\chapter{数据集构建与预处理}
+\section{数据来源与任务定义}
+\section{数据清洗与标准化}
+\subsection{格式转换与字段规范化}
+\subsection{题解与测试样例一致性校验}
+\section{数据增强与标注}
+\subsection{思维链（thought\_step）构建}
+\subsection{算法标签（tags）构建}
+\section{训练集与评测集划分策略}
+\section{本章小结}
+\chapter{模型与方法设计}
+\section{整体框架与实验流程}
+\section{基线方案设计（Base）}
+\subsection{Prompt 模板与生成设置}
+\subsection{基线评测流程}
+\section{LoRA 微调方案设计}
+\subsection{训练样本构造与监督目标}
+\subsection{关键超参数与训练策略}
+\subsection{适配器管理与自动化流程}
+\section{CoT 增强方案设计}
+\subsection{Zero-shot CoT 训练与推理流程}
+\subsection{Few-shot CoT 样例注入机制}
+\subsection{Zero-shot 与 Few-shot 对照实验设计}
+\subsection{个人工作内容与实现细节说明}
+\section{本章小结}
+\chapter{实验与结果分析}
+\section{实验设置}
+\subsection{软硬件环境与实现框架}
+\subsection{数据集与对比方案}
+\subsection{评测指标与统计方法}
+\section{实验结果}
+\subsection{Base 与 LoRA 对比结果}
+\subsection{CoT 系列对比结果}
+\section{结果分析与讨论}
+\subsection{LoRA 的有效性分析}
+\subsection{Few-shot CoT 的增益与边界}
+\subsection{典型案例与错误类型分析}
+\section{消融实验与鲁棒性分析}
+\section{本章小结}
+\chapter{总结与展望}
+\section{研究工作总结}
+\section{研究创新点与个人贡献总结}
+\section{不足与未来工作}
 
 %---------------------------------------------------------------------
 %	参考文献
