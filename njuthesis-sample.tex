@@ -79,11 +79,19 @@
 \raggedbottom
 
 \begin{abstract}
-  中文摘要
+  近年来，大语言模型（Large Language Models, LLMs）的快速发展推动了软件工程从“人工编码”向“智能生成”加速演进。算法代码生成作为其中的重要研究方向，在提升开发效率、辅助程序设计教学和构建智能编程工具方面具有显著应用价值。然而，现有方法在算法任务中仍面临推理过程不稳定、逻辑规划不足与代码可执行正确性波动等问题，限制了其工程落地能力。基于此，本文围绕大语言模型的算法代码生成开展系统研究，聚焦数据构建、参数高效微调与推理机制优化三个关键环节。
+
+  本文基于 KodCode 数据集构建了面向训练与评测的一体化实验流程，并以 Qwen2.5-Coder-7B-Instruct 为基座，依次开展 Base、LoRA 与 CoT 三组实验。在此基础上，本实验进一步引入 Few-shot CoT 机制，构建了 Zero-shot CoT 与 Few-shot CoT 的对照实验框架，用于分析示例引导对模型推理组织与生成质量的影响。实验采用统一提示模板与自动化单元测试评测流程，从可执行结果角度对不同方案进行比较。
+
+  实验结果表明：相较基座模型，LoRA 微调能够有效提升算法代码生成的稳定性与正确性；在此基础上引入 CoT 后，模型在复杂问题上的推理连贯性进一步增强；进一步加入 Few-shot 示例后，模型在解题步骤组织与代码生成鲁棒性方面展现出更好的表现。本文验证了“参数高效微调 + 结构化推理引导”在算法代码生成任务中的有效性。本人主要工作集中于 Few-shot CoT 方案设计、双 CoT 对照实验实现与实验链路打通，为论文形成了关键增量贡献，并为后续智能编程系统优化提供了可复用的实证基础。
 \end{abstract}
 
 \begin{abstract*}
-  English abstract
+  Recent advances in Large Language Models (LLMs) are reshaping software engineering from manual coding toward intelligence-assisted generation. Algorithmic code generation is a key direction in this transition, with practical value for developer productivity, programming education, and intelligent coding systems. However, existing approaches still suffer from unstable reasoning, limited planning ability, and inconsistent executable correctness on algorithmic tasks, which hinders reliable deployment. To address these challenges, this thesis investigates LLM-based algorithmic code generation from three aspects: data construction, parameter-efficient fine-tuning, and reasoning optimization.
+
+  We build an integrated train-evaluate pipeline based on KodCode-style data, and conduct three experimental settings with Qwen2.5-Coder-7B-Instruct: Base, LoRA, and CoT. Beyond this common setup, this work further introduces a Few-shot CoT mechanism and establishes a controlled comparison between Zero-shot CoT and Few-shot CoT, aiming to analyze how exemplar guidance affects reasoning organization and code quality. All settings are evaluated under a unified prompting format and an execution-based unit-test framework.
+
+  Qualitative findings show that LoRA improves generation stability and executable correctness over the base model; adding CoT further enhances reasoning coherence on complex problems; and incorporating few-shot exemplars leads to better robustness in step organization and final code generation. These results support the effectiveness of combining parameter-efficient adaptation with structured reasoning guidance for algorithmic code generation. My primary contribution is the design and implementation of the Few-shot CoT branch, including the dual-CoT comparative framework and end-to-end experimental integration, which provides a key incremental contribution to this thesis and a reproducible basis for future optimization of intelligent programming systems.
 \end{abstract*}
 
 % 生成目录
