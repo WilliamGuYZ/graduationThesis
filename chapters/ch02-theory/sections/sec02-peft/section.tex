@@ -1,7 +1,9 @@
 % Section 2.2: 参数高效微调技术
 
+在大语言模型面向特定领域的适配过程中，传统全量微调受资源与场景限制，难以满足轻量化、快速迭代、可复现的研究需求。参数高效微调技术（Parameter-Efficient Fine-Tuning, PEFT）通过仅更新极少部分参数实现任务定向优化，在保持模型性能的同时显著降低训练开销，已成为当前大模型落地的主流方案。本节将从全量微调的局限性出发，重点介绍本文所采用的 LoRA 方法的核心原理与技术优势。
+
 \subsection{全量微调的局限性}
-\include{chapters/ch02-theory/sections/sec02-peft/subsections/01-full-finetune-limitations}
+\input{chapters/ch02-theory/sections/sec02-peft/subsections/01-full-finetune-limitations}
 
 \subsection{LoRA 原理与优势}
-\include{chapters/ch02-theory/sections/sec02-peft/subsections/02-lora-principles-advantages}
+\input{chapters/ch02-theory/sections/sec02-peft/subsections/02-lora-principles-advantages}
