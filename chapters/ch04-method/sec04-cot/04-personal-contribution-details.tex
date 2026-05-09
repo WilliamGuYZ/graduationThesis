@@ -6,7 +6,7 @@
 Stage-1 推理长度在极端样本上会占满生成预算，导致 Stage-2 失去有效输入。为此两阶段采用对称预算加联合硬截断：Stage-1 以 \texttt{MAX\_TOKENS\_REASONING=1024} 为上界，产物再经 \texttt{MAX\_REASONING\_CHARS=1200}、\texttt{MAX\_REASONING\_PROMPT\_TOKENS=256} 二级截断注入 Stage-2；Stage-2 以 \texttt{MAX\_TOKENS\_CODE=1024} 为上界；两阶段整体由 \texttt{VLLM\_MAX\_MODEL\_LEN=8192} 兜底。该分层预算使 CoT-FS 模式下即使挂 $k{=}2$ 条示例也不会触发上下文溢出。
 
 \paragraph{（2）评测侧 few-shot 的可复现随机化}
-4.4.2 节已说明评测种子取 \pth{seed = 2026 + problem_idx * 1000 + sample_idx}。该构造有两点工程价值：
+4.4.2 节已说明评测种子取 \texttt{seed = 2026 + problem\_idx * 1000 + sample\_idx}。该构造有两点工程价值：
 \begin{itemize}
     \item \textbf{跨运行复现}：同一题目同一采样编号始终抽到同一组示例，便于故障排查与结果比对；
     \item \textbf{样本间去相关}：每个样本独立种子，避免所有 $N$ 次采样重复使用同一示例池，从而不让 pass@$k$ 被单一示例的质量主导。

@@ -1,1 +1,31 @@
 \section{消融实验与鲁棒性分析}
+
+本节在 10 组主实验之外，从关键超参数与随机性两个维度对结论稳健性做兜底验证。所有消融均沿用第四章一致口径，仅改变被消融变量本身。
+
+\paragraph{（1）关键超参数消融}
+以 H4（\texttt{LoRA\_code + Direct}）或 H8（\texttt{LoRA\_cot\_zs + CoT-ZS}）为锚点，分别单独扰动下列超参数：
+\begin{itemize}
+    \item \textbf{LoRA 秩 $r$}：在 $\{8, 16, 32, 64\}$ 上观察 pass@$k$ 随容量变化的走势，判断 $r{=}32$ 是否已到饱和；
+    \item \textbf{训练 epoch}：在 $\{1, 2, 3, 5\}$ 上考察是否存在过拟合拐点；
+    \item \textbf{采样温度}：在 $\{0.2, 0.3, 0.7\}$ 上考察 pass@1 与 pass@10 的相对移动——温度升高应使 pass@10 相对 pass@1 拉开更大差距，反之说明本任务的候选分布已高度集中；
+    \item \textbf{few-shot 示例数 $k$}：仅对 H6 / H10 做 $k \in \{1, 2, 4\}$ 的消融，验证 5.3.2 节中关于 $k$ 灵敏度的推断。
+\end{itemize}
+% TODO: 按算力预算选择其中 1~2 项纳入最终稿；若全部跑完，用一张 2$\times$4 小表汇总。
+
+\paragraph{（2）随机性敏感度}
+在主实验固定 seed 的前提下，抽取两组最具代表性的配置（H1 与 H8）额外复跑 $\ge 2$ 个不同 seed，报告 pass@$k$ 均值与标准差：
+\begin{itemize}
+    \item 若方法差分的量级明显大于标准差，则 5.3 节结论具备统计稳健性；
+    \item 若标准差可覆盖部分差分量，则应在相应结论处明确注明「在当前 seed 规模下不具统计显著性」。
+\end{itemize}
+
+\paragraph{（3）长度预算消融}
+针对 CoT 分支的两级截断，抽取 H8 做预算敏感性对照：
+\begin{itemize}
+    \item \textbf{关闭字符级截断}（\texttt{MAX\_REASONING\_CHARS} $\to \infty$）：观察 pass@$k$ 与超时率变化，验证字符级截断是否起到「剪掉冗余推理」的正效应；
+    \item \textbf{收紧 token 级截断}（\texttt{MAX\_REASONING\_PROMPT\_TOKENS} 下调至 $128$）：验证 Stage-2 是否仍能利用极简推理产生正确代码——若 pass@$k$ 仅小幅下降，则说明推理段的有效信号集中在前段。
+\end{itemize}
+
+\paragraph{（4）消融结论小结}
+上述三类消融各自锁定一种扰动源，最终应得到三条结论：\textbf{主要超参数已进入平坦区间}、\textbf{方法差分不被随机性主导}、\textbf{CoT 长度预算设置与信号密度相匹配}。三条结论共同构成 5.3 节结论在工程部署层面的可信度依据。
+% TODO: 按实际执行的消融子集，补齐具体数值与最终结论。

@@ -1,6 +1,6 @@
 % Subsection 3.2.1: 格式规范化
 
-KodCode 原始 Parquet 存在字段类型不一致（字符串、NumPy 对象、Pandas Series 混杂）、缺失标记多样（NaN / None / 空串并存）、嵌套结构不规范（\texttt{test\_info} 为空列表但键存在）等多种形态，若直接进入训练与评测会引发静默错误。为此 \pth{convet_KodCode_to_jsonl.py} 以「非空字符串 + 结构化对象完整性」为统一准绳完成规范化，具体分两步处理。
+KodCode 原始 Parquet 存在字段类型不一致（字符串、NumPy 对象、Pandas Series 混杂）、缺失标记多样（NaN / None / 空串并存）、嵌套结构不规范（\texttt{test\_info} 为空列表但键存在）等多种形态，若直接进入训练与评测会引发静默错误。为此 \texttt{convet\_KodCode\_to\_jsonl.py} 以「非空字符串 + 结构化对象完整性」为统一准绳完成规范化，具体分两步处理。
 
 \paragraph{（1）基础字段非空化}
 对 \texttt{question}、\texttt{solution}、\texttt{test} 三个字符串字段，先以 \texttt{pd.isna} 将 Pandas 的 NaN 归一为 Python \texttt{None}，再要求 \texttt{strip()} 后非空。任一条件不满足即整条丢弃，避免下游出现「空题干」「空解答」等退化样本。

@@ -1,1 +1,39 @@
 \subsection{Few-shot CoT 边界分析}
+
+本节回答第四章矩阵设计的两个核心设问：\textbf{LoRA 与 CoT 是否正交可加}，\textbf{few-shot 的边际贡献是否依赖训练侧}。分析均基于 5.2 节两张主结果表的差分取数。
+
+\paragraph{（1）训练 $\times$ 推理交互效应}
+以 $(H8 - H7) - (H2 - H1)$ 与 $(H10 - H9) - (H3 - H1)$ 为核心两条 difference-in-differences，三种典型情形对应 4.1 节预设的三种结论：
+\begin{itemize}
+    \item \textbf{正交可加}（两条 DiD $\approx 0$）：LoRA 与 CoT 在 pass@$k$ 上独立叠加，工程上可分别优化；
+    \item \textbf{LoRA 放大 CoT}（两条 DiD 显著 $> 0$）：LoRA 已把推理习惯内化进参数，与显式 CoT 推理形成正协同；
+    \item \textbf{LoRA 吸收 CoT}（两条 DiD 显著 $< 0$）：LoRA 已覆盖了 CoT 提供的大部分增益，显式两阶段推理反而带来边际递减。
+\end{itemize}
+作为补充证据，$(H5 - H4) - (H2 - H1)$ 与 $(H6 - H4) - (H3 - H1)$ 进一步控制「训练侧是否监督 CoT 格式」这一变量：若这两项 DiD 与前两项在符号上一致，说明交互效应与训练侧是否显式监督 CoT 无关；若符号反转，则 CoT 监督成为触发正交/吸收的必要条件，需要单列讨论。
+
+% TODO: 回填四条 DiD 数值，按 pass@1/5/10 分列；
+%       判断落入上述三种情形的哪一种，并用一句话给出工程侧结论。
+
+\paragraph{（2）Few-shot 边际一致性}
+Few-shot 的边际增益在不同训练侧上是否稳定，由以下两条对比给出直接证据：
+\begin{itemize}
+    \item \textbf{$\mathrm{H3} - \mathrm{H2}$（Base）vs $\mathrm{H6} - \mathrm{H5}$（LoRA\_code）}：两条「$k$ 例相对 $0$ 例」的 CoT 边际，训练侧均\textbf{未显式监督 CoT 格式}，用以验证 few-shot 是否为训练侧无关的结构性增益；
+    \item \textbf{$\mathrm{H10} - \mathrm{H8}$（LoRA\_cot，$k$ 匹配）}：训练与推理的 $k$ 同步由 $0$ 提升到 $\texttt{FS\_K}$，用以衡量在监督已含 CoT 的前提下「训练与推理 few-shot 同步放大」的净收益。
+\end{itemize}
+若前两条边际在符号与量级上一致、第三条显著大于前两条，则结论为：few-shot 的基础增益来自推理侧示例本身，而在训练侧同步注入示例可进一步被模型吸收为参数知识；若前两条不一致，则说明 few-shot 在不同训练侧上起作用的机制不同，5.3.3 节的案例分析需要在这一维度上重点展开。
+
+% TODO: 回填三条边际在 pass@1/5/10 上的数值，分别给出一致/不一致判定。
+
+\paragraph{（3）训练/推理 CoT 等价性}
+为厘清「把 CoT 写进参数」与「在推理时显式走 CoT」两条路径是否互为替代，检查以下两组不等式：
+\begin{itemize}
+    \item $\mathrm{H9} \gtrsim \mathrm{H10}$：若成立，说明训练时充分内化 CoT 后，推理阶段不再需要显式两阶段也能得到相近甚至更好的结果；
+    \item $\mathrm{H7} \gtrsim \mathrm{H8}$：与上一条在零示例场景下互为对照。
+\end{itemize}
+两组不等式同时成立则支持「训练侧等价替代」结论；若不等式方向相反，说明两条路径在不同子任务上各有优势，适合作为未来工作中的混合推理策略起点（见 6.3 节）。
+
+% TODO: 回填 H7/H8/H9/H10 的 pass@$k$ 并判定两组不等式；
+%       若结论呈混合形态，在 5.3.3 节挑选典型样本做对照展示。
+
+\paragraph{（4）$k$ 的选择灵敏度}
+本文固定 \texttt{FS\_K=2}，对 $k$ 的灵敏度不在主实验范围内。但可从已有结果中间接推断灵敏度方向：若 H6 − H5 远大于 H3 − H2，则 $k$ 带来的增益在 LoRA\_code 上被进一步放大，提示未来工作尝试更大 $k$；若差距反向，则 $k$ 的进一步增大可能撞上 \texttt{MAX\_LENGTH} 或上下文衰减的边界，应优先做截断策略优化而非简单增大 $k$。

@@ -3,7 +3,7 @@
 基线采用单阶段 chat 格式 prompt，所有训练/推理组若涉及 Direct 推理侧均共享该模板，以保证训练侧主效应不被 prompt 差异污染。
 
 \paragraph{（1）Chat 模板与系统指令}
-基座为 Instruct 化模型，因此直接复用其官方 chat template：system 消息固化角色定位，user 消息承载题目与函数签名约束，随后由 \pth{apply_chat_template(add_generation_prompt=True)} 拼出最终输入序列。具体字段如下：
+基座为 Instruct 化模型，因此直接复用其官方 chat template：system 消息固化角色定位，user 消息承载题目与函数签名约束，随后由 \texttt{apply\_chat\_template(add\_generation\_prompt=True)} 拼出最终输入序列。具体字段如下：
 \begin{itemize}
     \item \textbf{System}：\texttt{You are an expert Python programmer. Write correct Python code to solve the given problem.}
     \item \textbf{User（Instruction 模板）}：

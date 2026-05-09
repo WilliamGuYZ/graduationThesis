@@ -3,7 +3,7 @@
 少样本推理（\texttt{CoT-FS}）与少样本训练（\texttt{LoRA\_cot\_fs}）都需按算法范式在同一题库中检索「真正同类」的示例，因此标签体系的区分度直接决定了检索信号的有效性。本节基于这一需求设计强/弱两级标签，并约束教师模型按此产出。
 
 \paragraph{（1）强弱划分动机}
-扁平标签的主要问题是区分度失衡：\texttt{Array}、\texttt{String}、\texttt{Math}、\texttt{Recursion} 等通用标签在题库中几乎对所有样本命中，用于相似度匹配时会显著稀释算法骨架层的真正信号。\pth{annotate_algorithm_tags.py} 据此把标签词表显式切分为强标签 \texttt{STRONG\_TAGS} 与弱标签 \texttt{WEAK\_TAGS}（见表~\ref{tab:ch3-tags}）：前者刻画具有高判别力的算法骨架（如 \texttt{Dynamic Programming}、\texttt{BFS}、\texttt{Two Pointers}、\texttt{Monotonic Stack}），后者保留通用数据类型与宽泛范式作为辅助描述。
+扁平标签的主要问题是区分度失衡：\texttt{Array}、\texttt{String}、\texttt{Math}、\texttt{Recursion} 等通用标签在题库中几乎对所有样本命中，用于相似度匹配时会显著稀释算法骨架层的真正信号。\texttt{annotate\_algorithm\_tags.py} 据此把标签词表显式切分为强标签 \texttt{STRONG\_TAGS} 与弱标签 \texttt{WEAK\_TAGS}（见表~\ref{tab:ch3-tags}）：前者刻画具有高判别力的算法骨架（如 \texttt{Dynamic Programming}、\texttt{BFS}、\texttt{Two Pointers}、\texttt{Monotonic Stack}），后者保留通用数据类型与宽泛范式作为辅助描述。
 
 \paragraph{（2）标注协议与硬约束}
 教师模型仍为 \texttt{deepseek-chat}，单次输出上限 \texttt{MAX\_TOKENS=96}，返回一个扁平标签列表。本文施加一条硬约束：每条样本必须至少含一个强标签；若教师模型仅返回弱标签则按 3.3.1 节同款机制重试，重采样直至满足约束或达到重试上限。该约束保证下游少样本检索始终能在「算法骨架层」拿到有效信号，而不会被通用标签拉平。
@@ -13,7 +13,7 @@
 
 \begin{table}[!htb]
   \centering
-  \caption{强/弱标签词表（节选自 \pth{annotate_algorithm_tags.py}）}
+  \caption{强/弱标签词表（节选自 \texttt{annotate\_algorithm\_tags.py}）}
   \label{tab:ch3-tags}
   \footnotesize
   \begin{tabular}{p{0.18\textwidth} p{0.72\textwidth}}

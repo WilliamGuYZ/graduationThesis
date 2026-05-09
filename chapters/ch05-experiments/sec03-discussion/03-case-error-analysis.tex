@@ -1,1 +1,38 @@
 \subsection{案例与错误分析}
+
+5.3.1 与 5.3.2 从聚合指标刻画了方法层面的主效应与交互效应；本节从单题样本层面做失效归因，既对前述差分量提供解释性证据，也为 Ch1.4 研究目标 (4) 的「失效模式归因」落到实处。
+
+\paragraph{（1）失效模式分类}
+基于评测脚本记录的 stdout/stderr 与子进程退出码，对失败样本做如下四类划分：
+\begin{itemize}
+    \item \textbf{逻辑错误（Logic）}：代码可执行但断言失败，覆盖边界判断错误、状态更新顺序错误等；
+    \item \textbf{结构错误（Structural）}：代码无法 import 或函数名/签名与测试不一致，通常源于模型忽略 4.2.1 节 Instruction 中的 \texttt{func\_name/params}；
+    \item \textbf{运行时错误（Runtime）}：\texttt{IndexError / KeyError / RecursionError / TypeError} 等在执行阶段抛出的异常；
+    \item \textbf{超时（Timeout）}：触发 \texttt{TIMEOUT=5} 秒上限，常见于深递归或错误的复杂度估计。
+\end{itemize}
+
+\paragraph{（2）典型样本对照}
+从评测集中选取三类典型样本，对比同题目在 H1 / H4 / H8 / H10 四种方法下的失败/通过情况：
+\begin{itemize}
+    \item \textbf{样本 A：算法范式明确的单步问题}（如简单排序/查找）。基线 H1 即可稳定通过；LoRA 与 CoT 的边际贡献接近 0，用以验证「不难的题目不被方法差异放大」；
+    \item \textbf{样本 B：需要分步推理的复杂搜索/DP 问题}。基线 H1 经常陷入 Runtime 或 Timeout；CoT 组（H2/H8）与 LoRA\_cot 组（H7/H8）应有显著好转——该样本用于支撑 5.3.2 节「LoRA $\times$ CoT 正协同」结论；
+    \item \textbf{样本 C：函数签名与常规直觉不一致的题目}。Structural 错误高发，预期 LoRA 类方法相对基线的改善主要来自「更稳定地复述签名」——支撑 5.3.1 节关于稳定性的论述。
+\end{itemize}
+% TODO: 按实际评测产出的 JSON，挑选三个题目 id，补充原题摘录、模型输出摘录与对应失败类别。
+
+\paragraph{（3）CoT 推理段的典型失效}
+两阶段推理引入了新的失败来源，值得单列：
+\begin{itemize}
+    \item \textbf{推理偷跑代码}：Stage-1 未到指令末尾便滑出 \verb|```python|，后续 Stage-2 拿到的上下文含不完整代码块——本文通过 4.4.1 节的 Stage-1 清洗规则阻断；若仍有漏网，则在此节记录发生率；
+    \item \textbf{推理过长触发截断}：命中 \texttt{MAX\_REASONING\_CHARS=1200} 或 \texttt{MAX\_REASONING\_PROMPT\_TOKENS=256}，Stage-2 只看到被截短的推理，易出现「与题意微妙错位」的代码；
+    \item \textbf{推理与代码不一致}：Stage-1 给出 A 算法、Stage-2 却实现 B 算法，表面形式合规但断言失败——这是 few-shot CoT 尤其需要关注的模式，需在 CoT-FS 组中与 CoT-ZS 组对比发生率。
+\end{itemize}
+% TODO: 按评测结果统计三类 CoT 失败在 H2/H3/H5/H6/H8/H10 上的发生频次，交叉对比。
+
+\paragraph{（4）归因小结}
+案例层面的观察与 5.3.1、5.3.2 的聚合差分需要相互印证：
+\begin{itemize}
+    \item 若聚合指标显示 LoRA 有效，案例层面应同时看到 Logic/Structural 类失败显著下降；
+    \item 若聚合指标显示 CoT 有效，复杂搜索/DP 样本的通过率应有可观察的跃升；
+    \item 若两条结论在案例层面不能同时成立，则需回到方法本身（例如增大 \texttt{MAX\_LENGTH} 或放宽 Stage-1 截断）做进一步消融，5.4 节的消融实验即为这一回路提供兜底。
+\end{itemize}

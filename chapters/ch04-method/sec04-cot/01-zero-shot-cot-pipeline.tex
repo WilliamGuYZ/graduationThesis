@@ -57,4 +57,4 @@ Zero-shot CoT（CoT-ZS）对应 H2/H5/H8 三组推理侧。其核心思想是显
 \end{itemize}
 
 \paragraph{（4）端到端评测入口}
-CoT-ZS 的完整评测由 \pth{evaluation/eval_lora_cot_passk.py} 在 \texttt{-{}-few-shot-k 0} 下启动，数据加载、子进程隔离执行、pass@k 无偏估计与 4.2.2 节完全一致，仅把「一次生成 $N{\times}10$ 份结果」拆成「先批量生成 reasoning、再批量生成 code」两次 \texttt{llm.generate} 调用，以匹配两阶段流水线。
+CoT-ZS 的完整评测由 \texttt{evaluation/eval\_lora\_cot\_passk.py} 在 \texttt{--few-shot-k 0} 下启动，数据加载、子进程隔离执行、pass@k 无偏估计与 4.2.2 节完全一致，仅把「一次生成 $N{\times}10$ 份结果」拆成「先批量生成 reasoning、再批量生成 code」两次 \texttt{llm.generate} 调用，以匹配两阶段流水线。

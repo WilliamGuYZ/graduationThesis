@@ -61,13 +61,6 @@
 \usepackage{tikz}
 \usetikzlibrary{arrows.meta, positioning, shapes.geometric}
 
-% —— 长 \texttt 路径/命令允许换行 —— 
-% \pth{...} 会在每个字符后允许断行（用于下划线/斜杠密集的长标识符）
-% 同时放宽整体 \emergencystretch，缓解普通 \texttt 的行尾溢出
-\usepackage{seqsplit}
-\newcommand{\pth}[1]{{\ttfamily\seqsplit{#1}}}
-\setlength{\emergencystretch}{3em}
-
 % 在导言区随意定制所需命令
 % \DeclareMathOperator{\spn}{span}
 % \NewDocumentCommand\mathbi{m}{\textbf{\em #1}}
