@@ -1,0 +1,16 @@
+% Section 3.1: 数据来源与任务定义
+
+本章构建的数据集用于 Qwen2.5-Coder-7B-Instruct 的 LoRA 微调与 pass@k 评测，需同时满足三项要求：题目覆盖主流算法范式、解答代码可被单元测试自动判定正确性、以及具备支持思维链监督与少样本检索所需的结构化标注。综合考虑规模、质量与可执行性，本文选取公开的 KodCode 算法题数据作为原始来源，其条目天然附带题目描述、参考解答与针对性单测，是构建「生成—执行—判定」闭环评测的良好起点。
+
+\paragraph{（1）原始数据形态}
+原始 KodCode 以 Parquet 列式存储，单条记录包含 \texttt{question}（自然语言题目）、\texttt{solution}（Python 参考解答）、\texttt{test}（pytest 风格单测脚本）与 \texttt{test\_info}（对被测函数签名的结构化描述，含 \texttt{function\_declaration}、\texttt{function\_name}、\texttt{parameter\_list} 等字段）。脚本 \texttt{convet\_KodCode\_to\_jsonl.py} 从原始文件中按顺序扫描，仅保留上述四个字段，并逐条调用单测执行器，直至凑齐目标条数（本文取 \texttt{HEAD\_N}=10000）。
+
+\paragraph{（2）任务形式化}
+给定题目 $q$，模型需输出可直接执行的 Python 解答 $\hat{s}$，判定准则为：将 $\hat{s}$ 与官方测试脚本 $t$ 组合、在隔离子进程中运行，若全部断言通过则记为一次成功。令 $n$ 为采样次数、$c$ 为其中成功次数，则
+\[
+\text{pass@}k \;=\; \mathbb{E}_{q}\!\left[\,1 - \binom{n-c}{k}\Big/\binom{n}{k}\,\right],
+\]
+作为数据集层面的主评测指标。该指标同时服务于训练侧与推理侧的所有对照（见第四章 H1--H10 实验矩阵）。
+
+\paragraph{（3）条目有效性前提}
+为避免无意义样本污染训练与评测，所有后续环节都以「单测可判定且原始解答通过」为硬约束。这一约束直接决定了第 3.2 节的校验流程与第 3.4 节的划分策略——评测集的通过率上限必须由参考解答本身保证，模型侧的 pass@k 才具备可解释的对照基线。
