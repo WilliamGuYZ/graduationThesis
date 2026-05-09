@@ -1,5 +1,7 @@
 \section{LoRA 微调方案设计}
 
+LoRA 分支在 Base 之上引入训练侧参数化，覆盖 4.1 节矩阵的 H4--H10 七组。三种适配器均在同一基座、同一训练脚本骨架下产出，差异仅在训练样本的监督目标与是否在训练 prompt 中注入 few-shot 示例。本节 4.3.1 先界定三种适配器的训练样本与 loss 口径，4.3.2 给出与之匹配的一组超参数，4.3.3 说明从训练落盘到推理侧挂载的完整链路。
+
 \input{chapters/ch04-method/sec03-lora/01-training-samples-objective}
 \input{chapters/ch04-method/sec03-lora/02-hyperparameters-strategy}
 \input{chapters/ch04-method/sec03-lora/03-adapter-pipeline}

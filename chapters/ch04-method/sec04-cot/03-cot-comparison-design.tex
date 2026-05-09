@@ -1,1 +1,33 @@
 \subsection{CoT 对照实验设计}
+
+4.4.1、4.4.2 已给出 CoT-ZS 与 CoT-FS 的具体实现，本节把涉及 CoT 的 6 组评测（H2、H3、H5、H6、H8、H10）按设问重组为三组纯 CoT 对照，作为第五章归因分析的直接依据。
+
+\paragraph{（1）推理侧主效应（训练侧固定为 Base）}
+以 H1 为共同基线，抽取不依赖任何 LoRA 微调的 CoT 推理侧贡献：
+\begin{itemize}
+    \item \textbf{$H2 - H1$}：CoT-ZS 相对 Direct 的主效应，回答「零示例推理是否在基座上就有增益」；
+    \item \textbf{$H3 - H1$}：CoT-FS($k$) 相对 Direct 的主效应，回答「加 $k$ 条示例是否进一步改进基座」；
+    \item \textbf{$H3 - H2$}：few-shot 相对 zero-shot 的边际贡献，隔离示例本身的增益。
+\end{itemize}
+三条差分共享同一训练侧（Base），仅推理侧变化，使得该组对照内的任何显著差异都可归因于 prompt 结构。
+
+\paragraph{（2）训练 $\times$ 推理交互效应}
+固定 LoRA 作为训练侧、CoT 作为推理侧，通过差分差分量（difference-in-differences）判断两者是否正交可加：
+\begin{itemize}
+    \item \textbf{$(H8 - H7) - (H2 - H1)$}：在 \texttt{LoRA\_cot\_zs} 与 Base 上「加 CoT-ZS 推理」两条边际是否一致；
+    \item \textbf{$(H10 - H9) - (H3 - H1)$}：在 \texttt{LoRA\_cot\_fs($k$)} 与 Base 上「加 CoT-FS($k$) 推理」两条边际是否一致（$k$ 匹配约束下）；
+    \item \textbf{$(H5 - H4) - (H2 - H1)$}：在 \texttt{LoRA\_code} 与 Base 上「加 CoT-ZS 推理」两条边际是否一致，额外控制了「未监督 CoT 格式」的训练侧；
+    \item \textbf{$(H6 - H4) - (H3 - H1)$}：同上，推理侧换为 CoT-FS($k$)。
+\end{itemize}
+该组对照的符号与量级直接回答 4.1 节提出的「LoRA 与 CoT 是否正交可加」核心设问，是本文析因设计的主落点。
+
+\paragraph{（3）Few-shot 边际在训练侧上的一致性}
+只变化训练侧，观察 few-shot 的边际贡献是否稳定：
+\begin{itemize}
+    \item \textbf{$H3 - H2$（Base）vs $H6 - H5$（LoRA\_code）}：两条「$k$ 例相对 $0$ 例」的边际在\textbf{未显式监督 CoT 格式}的训练侧上是否一致；
+    \item \textbf{$H10 - H8$（匹配 $k$ 的 LoRA\_cot）}：训练与推理 $k$ 同步放大时，CoT 的净收益相对纯 CoT-ZS 路径的提升量。
+\end{itemize}
+该组回答「few-shot 是否为训练侧无关的结构性增益」——若两条边际量级一致，说明 few-shot 主要作用于推理侧；若差异显著，说明训练侧会调节 few-shot 的有效性，需要在结论中分别讨论。
+
+\paragraph{（4）对照汇总}
+三组对照各自锁定一个变量、释放另一个变量，覆盖 H1--H10 十组中全部与 CoT 相关的显著差分。所用到的结果文件按 4.1 节表~\ref{tab:ch4-matrix} 末列命名规则落盘，第五章只需按表取数即可完成计算，无需额外实验。

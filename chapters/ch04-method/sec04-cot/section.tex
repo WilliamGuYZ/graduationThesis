@@ -1,5 +1,7 @@
 \section{CoT 增强方案设计}
 
+CoT 分支把「推理」从隐式激活变为显式两阶段流程，对应 4.1 节矩阵中 H2、H3、H5、H6、H8、H10 六组评测。相对 Direct，CoT 的方法差异集中在推理侧 prompt 结构与生成调度——训练侧由 4.3 节的 LoRA 方案统一承接，本节不再重复。本节 4.4.1 给出 Zero-shot CoT 的两阶段流水线骨架，4.4.2 说明 Few-shot 示例的检索与拼接方式，4.4.3 把 6 组 CoT 对照按设问对齐到矩阵中具体实验编号，4.4.4 汇总为保证两阶段推理稳定而加入的关键工程约束。
+
 \input{chapters/ch04-method/sec04-cot/01-zero-shot-cot-pipeline}
 \input{chapters/ch04-method/sec04-cot/02-few-shot-cot-injection}
 \input{chapters/ch04-method/sec04-cot/03-cot-comparison-design}

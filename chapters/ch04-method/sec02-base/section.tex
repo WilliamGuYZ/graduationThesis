@@ -1,4 +1,6 @@
 \section{基线方案设计（Base）}
 
+基线方案对应 4.1 节矩阵中的 H1：在不加任何 LoRA 适配器的情形下，直接用 Qwen2.5-Coder-7B-Instruct 原始权重完成「题目 $\to$ 代码」的单阶段生成，作为后续所有训练侧与推理侧效应的共同参照点。本节先固定单阶段 prompt 模板与生成采样设置（4.2.1），再给出从数据加载到 pass@k 汇总的端到端评测流程（4.2.2）。
+
 \input{chapters/ch04-method/sec02-base/01-prompt-template}
 \input{chapters/ch04-method/sec02-base/02-base-evaluation}

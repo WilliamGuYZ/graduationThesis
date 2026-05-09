@@ -1,1 +1,21 @@
 \subsection{适配器推理流程}
+
+训练脚本落盘的适配器需要被后续 H4--H10 共 7 组评测实验正确挂载，本节说明从「训练产出 $\to$ 指针文件 $\to$ 评测挂载」的完整链路，以及 Direct 推理下的单阶段生成口径。
+
+\paragraph{（1）训练产出与指针文件}
+每次训练结束时，脚本会做两件与评测对接直接相关的事：
+\begin{itemize}
+    \item 在 \texttt{train/outputs/} 下生成带时间戳的适配器目录，内含 \texttt{adapter\_model.safetensors}、\texttt{adapter\_config.json} 与与基座对齐的 \texttt{tokenizer*} 文件；
+    \item 将该绝对路径单行写入对应指针文件——\texttt{train.py} 写 \texttt{latest\_lora\_adapter.txt}，\texttt{train\_cot.py --num-few-shots 0} 写 \texttt{latest\_lora\_cot\_zs\_adapter.txt}，\texttt{train\_cot.py --num-few-shots $k$} 写 \texttt{latest\_lora\_cot\_fs\{k\}\_adapter.txt}。
+\end{itemize}
+指针文件与最新适配器路径一一对应：评测脚本若未通过 \texttt{--lora-path} 显式传入路径，则 fallback 读取本脚本默认的指针文件，据此决定此次评测挂载哪份适配器。该解耦使得重训后无需改评测脚本，而显式传参又允许 H5/H6/H7/H9 等跨脚本挂载场景（如 CoT 评测脚本挂 \texttt{LoRA\_code} 适配器以跑 H5/H6）。
+
+\paragraph{（2）vLLM + LoRA 运行时}
+Direct 推理对应 \texttt{eval\_lora\_passk.py}，承担 H4（默认读 code 指针）、H7（\texttt{--lora-path <cot\_zs>}）、H9（\texttt{--lora-path <cot\_fs>}）三组。运行时关键配置与基线有两点差异：
+\begin{itemize}
+    \item \textbf{启用 LoRA 子系统}：构造 \texttt{LLM(..., enable\_lora=True, max\_lora\_rank=32)} 并传入 \texttt{LoRARequest(lora\_name="eval\_adapter", lora\_int\_id=1, lora\_path=<adapter>)}；
+    \item \textbf{Tokenizer 对齐}：若适配器目录同时落盘了 \texttt{tokenizer\_config.json} 或 \texttt{tokenizer.json}，vLLM 的 \texttt{tokenizer} 参数改指向适配器目录，以规避基座与适配器之间可能的特殊 token 不一致；否则回退基座 tokenizer。
+\end{itemize}
+
+\paragraph{（3）单阶段生成口径的一致性}
+除上述 LoRA 挂载差异外，\texttt{eval\_lora\_passk.py} 的 Prompt 模板、采样参数（\texttt{NUM\_SAMPLES=10}、\texttt{TEMPERATURE=0.3}、\texttt{top\_p=0.95}、\texttt{top\_k=50}、\texttt{MAX\_TOKENS=1024}）、代码抽取正则、子进程执行超时（\texttt{TIMEOUT=5} 秒）、pass@k 无偏估计公式、\texttt{K\_LIST=[1,5,10]} 均与 4.2 节 Base 评测完全一致。结果统一写入 \texttt{evaluation/results/eval\_lora\_passk\_<suffix>.json}，其中 \texttt{<suffix>} 按 4.1 节表~\ref{tab:ch4-matrix} 末列取 \texttt{h4\_lora\_code\_direct}、\texttt{h7\_lora\_cot\_zs\_direct}、\texttt{h9\_lora\_cot\_fs\{k\}\_direct}，为第五章差分分析提供文件级可追溯性。
