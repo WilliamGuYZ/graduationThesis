@@ -3,7 +3,14 @@
 本章为 Qwen2.5-Coder-7B-Instruct 的 LoRA 微调与 pass@k 评测构建统一语料。具体要求有三：题目覆盖主流算法范式、解答代码可被单元测试自动判定正确性、并具备支持思维链监督与少样本检索的结构化标注。综合规模、质量与可执行性考虑，本文选取公开的 KodCode 作为原始来源——其条目天然附带题目、参考解答与针对性单测，契合「生成—执行—判定」闭环的构建需要。
 
 \paragraph{（1）原始字段}
-原始 KodCode 以 Parquet 列式存储，每条记录含四个字段：\texttt{question}（自然语言题目）、\texttt{solution}（Python 参考解答）、\texttt{test}（pytest 风格单测脚本）与 \texttt{test\_info}（被测函数签名的结构化描述，含 \texttt{function\_declaration}、\texttt{function\_name}、\texttt{parameter\_list} 等）。脚本 \texttt{convet\_KodCode\_to\_jsonl.py} 按顺序扫描原始文件、仅保留上述字段并逐条调用单测执行器，直至凑齐 \texttt{HEAD\_N}=10000 条目标样本。
+原始 KodCode 以 Parquet 列式存储，每条记录含以下四个字段：
+\begin{itemize}
+    \item \texttt{question}：自然语言题目描述；
+    \item \texttt{solution}：Python 参考解答；
+    \item \texttt{test}：pytest 风格单测脚本；
+    \item \texttt{test\_info}：被测函数签名的结构化描述，含 \texttt{function\_declaration}、\texttt{function\_name}、\texttt{parameter\_list} 等。
+\end{itemize}
+脚本 \texttt{convet\_KodCode\_to\_jsonl.py} 按顺序扫描原始文件、仅保留上述字段并逐条调用单测执行器，直至凑齐 \texttt{HEAD\_N}=10000 条目标样本。
 
 \paragraph{（2）任务形式化与评测指标}
 给定题目 $q$，模型需输出可直接执行的 Python 解答 $\hat{s}$：将 $\hat{s}$ 与官方测试 $t$ 组合、在隔离子进程中运行，若全部断言通过则记为一次成功。令 $n$ 为采样次数、$c$ 为其中成功次数，则

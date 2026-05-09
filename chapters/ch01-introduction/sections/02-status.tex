@@ -10,3 +10,5 @@
 
 \paragraph{推理引导与链式思维方法研究进展}
 除训练侧的改进外，推理侧的提示工程同样构成代码生成能力提升的重要途径。Wei 等人提出的 Chain-of-Thought（CoT）提示通过在示例中显式展示“逐步推理”过程，显著提升了大模型在数学推理与符号推理任务上的表现；Kojima 等人进一步指出，仅需添加 “Let's think step by step” 一句引导即可激发 Zero-shot CoT 能力。此后，Self-Consistency、Tree-of-Thoughts、ReAct 等方法从采样策略、搜索结构与工具调用等角度拓展了结构化推理的研究边界。在代码生成场景中，Self-Planning、Plan-and-Solve、Structured CoT 等工作尝试将“自然语言规划 + 代码实现”的两阶段结构引入生成流程，在 HumanEval 与 APPS 等基准上取得了稳定增益。
+
+综合来看，训练侧的参数高效微调与推理侧的链式思维已分别在各自维度获得广泛验证，但\textbf{二者在算法代码生成场景下的协同机理仍缺乏在统一协议下的系统性析因对照}——这正是本文 1.3 节所要厘清的核心问题。
