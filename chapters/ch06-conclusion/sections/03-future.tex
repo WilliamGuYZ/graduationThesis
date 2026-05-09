@@ -4,7 +4,7 @@
 
 \paragraph{（1）本文研究的局限}
 \begin{itemize}
-    \item \textbf{基座单一}：仅围绕 Qwen2.5-Coder-7B-Instruct 展开，训练 $\times$ 推理的交互结论是否在不同规模（如 1.5B / 14B）与不同家族（如 DeepSeek-Coder、StarCoder）基座上成立，本文未给出直接证据；
+    \item \textbf{基座单一}：仅围绕 CodeGeeX4-ALL-9B（$\approx$9B 参数级）展开，训练 $\times$ 推理的交互结论是否在不同规模（如 1.5B / 14B）与不同家族（如 DeepSeek-Coder、StarCoder）基座上成立，本文未给出直接证据；
     \item \textbf{数据域单一}：语料来自 KodCode 派生样本，偏重算法题；在工程型编码任务（API 调用、系统脚本、框架适配）上的表现留作后续工作；
     \item \textbf{$k$ 值灵敏度未系统化}：本文固定 \texttt{FS\_K=2} 以控制 10 组实验规模，更大 $k$ 下的 few-shot 收益曲线及其与 \texttt{MAX\_LENGTH} 的相互作用尚未展开；
     \item \textbf{评测指标单一}：仅报告 pass@$k$，未涉及代码质量（复杂度、风格一致性）与计算效率（生成延迟、显存占用）维度；

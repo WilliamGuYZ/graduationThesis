@@ -4,8 +4,8 @@
 
 \paragraph{（1）硬件与基座模型}
 \begin{itemize}
-    \item \textbf{GPU}：单张消费级/服务器级 GPU（训练与评测复用同一块显卡），显存不低于 24\,GB；实际运行中 \texttt{gradient\_checkpointing} 与 vLLM 的 \texttt{gpu\_memory\_utilization=0.9} 已在 7B 规模下联合限制峰值占用；
-    \item \textbf{基座模型}：Qwen2.5-Coder-7B-Instruct，权重从官方仓库下载后直接落在 \texttt{models/Qwen2.5-Coder-7B-Instruct/}，10 组实验不换基座、不换权重 checkpoint；
+    \item \textbf{GPU}：单张消费级/服务器级 GPU（训练与评测复用同一块显卡），显存不低于 24\,GB；实际运行中 \texttt{gradient\_checkpointing} 与 vLLM 的 \texttt{gpu\_memory\_utilization=0.9} 已在当前基座规模（约 9B 参数）下联合限制峰值占用；
+    \item \textbf{基座模型}：CodeGeeX4-ALL-9B（\texttt{THUDM/codegeex4-all-9b}），权重落在 \texttt{models/Qwen2.5-Coder-7B-Instruct/}（目录名为仓库既有约定），10 组实验不换基座、不换权重 checkpoint；
     \item \textbf{数值精度}：训练与推理统一使用 \texttt{bf16}，避免因混合精度差异引入结果扰动。
 \end{itemize}
 

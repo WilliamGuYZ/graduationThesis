@@ -16,12 +16,12 @@
     \texttt{lora\_alpha}    & 64 & 缩放系数，有效学习率 $\approx \alpha / r = 2$ \\
     \texttt{lora\_dropout}  & 0.1 & 训练时的正则化，降低过拟合 \\
     \texttt{bias}           & \texttt{"none"} & 不训练偏置，仅训练 LoRA A/B 矩阵 \\
-    \texttt{target\_modules} & \footnotesize\ttfamily q/k/v/o\_proj, gate/up/down\_proj & 同时覆盖 attention 与 MLP 两条通路 \\
+    \texttt{target\_modules} & \footnotesize\ttfamily query\_key\_value, dense, dense\_h\_to\_4h, dense\_4h\_to\_h & ChatGLM/CodeGeeX4 架构下 attention 与 MLP 线性层 \\
     \texttt{task\_type}     & \texttt{CAUSAL\_LM} & 自回归语言建模 \\
     \bottomrule
   \end{tabular}
 \end{table}
-将 LoRA 同时注入 attention 四个投影矩阵与 MLP 三个投影矩阵，相较于仅注入 attention 而言，能让 CoT 推理段的语义变换与代码段的符号变换共同从参数侧获得调整空间，这一点在 \texttt{LoRA\_cot\_*} 的监督目标下尤为关键。
+将 LoRA 注入 ChatGLM 块中的 \texttt{query\_key\_value}（融合 QKV）、注意力输出 \texttt{dense} 以及 MLP 两侧 \texttt{dense\_h\_to\_4h}、\texttt{dense\_4h\_to\_h}，使 CoT 推理段与代码段在参数侧均可获得适配空间，这一点在 \texttt{LoRA\_cot\_*} 的监督目标下尤为关键。
 
 \paragraph{（2）优化器与调度}
 \begin{table}[!htb]
@@ -42,7 +42,7 @@
     \texttt{lr\_scheduler\_type}            & \texttt{cosine} & warmup 后余弦退火 \\
     \texttt{optim}                          & \texttt{adamw\_torch} & 标准 AdamW \\
     \texttt{bf16}                           & \texttt{True} & 数值精度，兼顾速度与稳定 \\
-    \texttt{gradient\_checkpointing}        & \texttt{True} & 以时间换显存，匹配 7B 规模 \\
+    \texttt{gradient\_checkpointing}        & \texttt{True} & 以时间换显存，匹配当前基座规模（约 9B 参数） \\
     \texttt{seed}                           & 42 & 训练侧全局种子 \\
     \bottomrule
   \end{tabular}
