@@ -1,0 +1,103 @@
+% Section 4.1: 整体框架与实验流程
+
+第三章已得到可执行单测判定、带思维步骤与算法标签的统一语料。本章据此设计模型与方法层面的全部对照：以 Qwen2.5-Coder-7B-Instruct 为共同基座，围绕「训练侧是否注入 LoRA 参数」与「推理侧是否显式走 CoT 两阶段」两条独立因子，建立覆盖主效应与交互效应的析因矩阵，为第五章 pass@k 层面的归因提供完整对照基础。
+
+\paragraph{（1）两因素析因设计}
+对照维度严格区分为两个正交因子，避免训练侧与推理侧的效应彼此混淆：
+\begin{itemize}
+    \item \textbf{训练侧（LoRA 适配器类型）} 共四档——\texttt{Base}（不加 LoRA 的原始基座）、\texttt{LoRA\_code}（仅监督 \texttt{solution} 的纯代码 LoRA）、\texttt{LoRA\_cot\_zs}（监督 \texttt{thought\_step + solution} 且训练 prompt 不含示例）、\texttt{LoRA\_cot\_fs(k)}（同样监督 CoT 格式但训练 prompt 含 $k$ 条 few-shot 示例）；
+    \item \textbf{推理侧（Prompt 结构）} 共三档——\texttt{Direct}（单阶段，题目直接映射到代码）、\texttt{CoT-ZS}（两阶段，先生成推理再生成代码，零示例）、\texttt{CoT-FS(k)}（在 CoT-ZS 基础上前置 $k$ 条按强标签检索得到的示例）。
+\end{itemize}
+
+\paragraph{（2）合法性约束与有效组合}
+$4 \times 3 = 12$ 个理论组合中引入一条口径约束：若训练侧与推理侧\textbf{均为} CoT，则两侧的示例数 $k$ 必须严格相等。该约束用于保持 train/test 上下文分布一致，避免「训练见过 0 例、推理给 $k$ 例」或反之造成的分布漂移。据此排除如下两组：
+\begin{itemize}
+    \item \texttt{LoRA\_cot\_zs} + \texttt{CoT-FS(k>0)}：训练 $k{=}0$ 与推理 $k{>}0$ 不一致；
+    \item \texttt{LoRA\_cot\_fs(k)} + \texttt{CoT-ZS}：训练 $k{>}0$ 与推理 $k{=}0$ 不一致。
+\end{itemize}
+剩余 \textbf{10 组有效实验} H1--H10，构成本文全部对照的源头。
+
+\paragraph{（3）十组实验矩阵}
+表~\ref{tab:ch4-matrix} 汇总 H1--H10 的训练侧、推理侧与评测脚本对应关系；其中 $k$ 取 \texttt{FS\_K}（本文固定为 $2$），LoRA adapter 指针即训练脚本在 \texttt{train/} 目录下落盘的纯文本文件，供评测脚本读取当前最新适配器路径。
+
+\begin{table}[!htb]
+  \centering
+  \caption{H1--H10 实验矩阵：训练侧 $\times$ 推理侧与评测入口}
+  \label{tab:ch4-matrix}
+  \footnotesize
+  \setlength{\tabcolsep}{3pt}
+  \begin{tabular}{clllll}
+    \toprule
+    编号 & 训练侧 & 推理侧 & LoRA 指针 & 评测脚本 \\
+    \midrule
+    H1  & Base            & Direct      & ---                                    & \texttt{eval\_base\_passk.py} \\
+    H2  & Base            & CoT-ZS      & ---                                    & \texttt{eval\_lora\_cot\_passk.py --lora-path NONE --few-shot-k 0} \\
+    H3  & Base            & CoT-FS($k$) & ---                                    & \texttt{eval\_lora\_cot\_passk.py --lora-path NONE --few-shot-k k} \\
+    H4  & LoRA\_code      & Direct      & \texttt{latest\_lora\_adapter.txt}       & \texttt{eval\_lora\_passk.py} \\
+    H5  & LoRA\_code      & CoT-ZS      & \texttt{latest\_lora\_adapter.txt}       & \texttt{eval\_lora\_cot\_passk.py --lora-path <code> --few-shot-k 0} \\
+    H6  & LoRA\_code      & CoT-FS($k$) & \texttt{latest\_lora\_adapter.txt}       & \texttt{eval\_lora\_cot\_passk.py --lora-path <code> --few-shot-k k} \\
+    H7  & LoRA\_cot\_zs   & Direct      & \texttt{latest\_lora\_cot\_zs\_adapter.txt} & \texttt{eval\_lora\_passk.py --lora-path <cot\_zs>} \\
+    H8  & LoRA\_cot\_zs   & CoT-ZS      & \texttt{latest\_lora\_cot\_zs\_adapter.txt} & \texttt{eval\_lora\_cot\_passk.py --few-shot-k 0} \\
+    H9  & LoRA\_cot\_fs($k$) & Direct   & \texttt{latest\_lora\_cot\_fs\{k\}\_adapter.txt} & \texttt{eval\_lora\_passk.py --lora-path <cot\_fs>} \\
+    H10 & LoRA\_cot\_fs($k$) & CoT-FS($k$) & \texttt{latest\_lora\_cot\_fs\{k\}\_adapter.txt} & \texttt{eval\_lora\_cot\_passk.py --few-shot-k k} \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\paragraph{（4）整体实验流水线}
+为保证 10 组结果可复现且相互可比，训练阶段与评测阶段解耦为两级串行流程，如图~\ref{fig:ch4-pipeline} 所示。训练侧由 \texttt{train.py} 与 \texttt{train\_cot.py} 分别产出 \texttt{LoRA\_code}、\texttt{LoRA\_cot\_zs}、\texttt{LoRA\_cot\_fs(k)} 三份适配器，各自把落盘目录写入独立的指针文件；评测阶段的 10 组实验按开关依次调用三份评测脚本，按需读取对应指针，统一将结果写入 \texttt{evaluation/results/eval\_*\_<suffix>.json}。
+
+\begin{figure}[!htb]
+  \centering
+  \begin{tikzpicture}[
+    node distance=5mm and 6mm,
+    box/.style={draw, rounded corners=2pt, align=center, minimum height=8mm, minimum width=24mm, font=\footnotesize},
+    lbl/.style={font=\scriptsize\itshape, align=center},
+    arr/.style={-{Stealth[length=2mm]}, thick},
+  ]
+    % row 1: training
+    \node[box] (d) {\texttt{KodCode\_train.jsonl}};
+    \node[box, right=of d] (t1) {\texttt{train.py}};
+    \node[box, right=of t1] (t2) {\texttt{train\_cot.py}\\ \scriptsize($k{=}0$)};
+    \node[box, right=of t2] (t3) {\texttt{train\_cot.py}\\ \scriptsize($k$)};
+
+    \node[box, below=9mm of t1] (a1) {\texttt{LoRA\_code}};
+    \node[box, below=9mm of t2] (a2) {\texttt{LoRA\_cot\_zs}};
+    \node[box, below=9mm of t3] (a3) {\texttt{LoRA\_cot\_fs($k$)}};
+
+    \draw[arr] (d) -- (t1);
+    \draw[arr] (d.east) to [bend left=10] (t2.west);
+    \draw[arr] (d.east) to [bend left=20] (t3.west);
+    \draw[arr] (t1) -- (a1);
+    \draw[arr] (t2) -- (a2);
+    \draw[arr] (t3) -- (a3);
+
+    % row 2: evaluation
+    \node[box, below=11mm of a1, minimum width=34mm] (e1) {\texttt{eval\_base\_passk.py}\\ \scriptsize H1};
+    \node[box, right=of e1, minimum width=34mm] (e2) {\texttt{eval\_lora\_passk.py}\\ \scriptsize H4 / H7 / H9};
+    \node[box, right=of e2, minimum width=34mm] (e3) {\texttt{eval\_lora\_cot\_passk.py}\\ \scriptsize H2 / H3 / H5 / H6 / H8 / H10};
+
+    \draw[arr] (a1.south) to [bend right=10] (e2.north);
+    \draw[arr] (a2.south) to [bend right=10] (e2.north);
+    \draw[arr] (a3.south) to [bend right=10] (e2.north);
+    \draw[arr] (a1.south) to [bend right=20] (e3.north);
+    \draw[arr] (a2.south) to [bend right=10] (e3.north);
+    \draw[arr] (a3.south) to [bend left=10] (e3.north);
+
+    \node[box, below=9mm of e2, minimum width=50mm] (r) {\texttt{evaluation/results/eval\_*\_<suffix>.json}};
+    \draw[arr] (e1.south) to [bend right=10] (r.west);
+    \draw[arr] (e2) -- (r);
+    \draw[arr] (e3.south) to [bend left=10] (r.east);
+  \end{tikzpicture}
+  \caption{第四章整体流水线：训练阶段产出三份适配器，评测阶段按 10 组配置统一落盘 pass@k 结果}
+  \label{fig:ch4-pipeline}
+\end{figure}
+
+\paragraph{（5）结果命名与主要对照口径}
+10 组结果统一采用 \texttt{eval\_<mode>\_passk\_<hN\_desc>.json} 命名（见表~\ref{tab:ch4-matrix} 末列 suffix），每份 CoT 评测 JSON 额外记录 \texttt{mode / use\_lora / lora\_path / few\_shot\_k} 以便回溯。第五章将据此展开三类主要对照：
+\begin{itemize}
+    \item \textbf{主效应}：以 H1 为共同基线，分别通过 $\{$H4, H7, H9$\}$ 抽取训练侧主效应，通过 $\{$H2, H3$\}$ 抽取推理侧主效应；
+    \item \textbf{交互效应}：由 $(H8-H7)-(H2-H1)$ 与 $(H10-H9)-(H3-H1)$ 两条差分差分量，判定 LoRA 与 CoT 是否正交可加；
+    \item \textbf{Few-shot 一致性}：对比 $H3-H2$ 与 $H6-H5$ 的符号与量级，判断 few-shot 边际增益是否依赖训练侧。
+\end{itemize}
+本章 4.2--4.4 节依次给出 Base、LoRA、CoT 三条分支的方法实现，全部训练与评测超参均在此统一口径下设置，不随实验组改动。

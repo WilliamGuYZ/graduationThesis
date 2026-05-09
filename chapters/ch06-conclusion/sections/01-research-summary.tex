@@ -1,0 +1,21 @@
+% Section 6.1: 研究工作总结
+
+本文围绕「基于大语言模型的算法代码生成」选题，以 Qwen2.5-Coder-7B-Instruct 为共同基座，在 KodCode 派生的统一语料上构建了训练-评测一体化实验框架，按「训练侧 $\times$ 推理侧」二因素析因展开 H1--H10 共 10 组对照，完整工作可归纳为以下四条主线。
+
+\paragraph{（1）统一语料与评测协议的构建}
+第三章基于 KodCode 构建了带 \texttt{thought\_step} 与 \texttt{tags} 标注的 JSONL 语料，并以「单测可判定且参考解答通过」为硬约束完成顺序划分，产出 $\approx$9000 条训练集与 $\approx$1000 条评测集。所有后续实验共享同一份语料、同一份 chat template、同一份子进程隔离执行器与同一套 pass@$k$ 无偏估计口径，保证 10 组结果之间的可比性。
+
+\paragraph{（2）LoRA 微调方案的系统落地}
+第四章 4.3 节在统一基座上设计三种 LoRA 适配器：\texttt{LoRA\_code}（仅监督代码）、\texttt{LoRA\_cot\_zs}（监督推理+代码，零示例）、\texttt{LoRA\_cot\_fs($k$)}（监督推理+代码，含 $k$ 例训练 prompt）。三者共享 $r{=}32$、$\alpha{=}64$、覆盖 attention 与 MLP 七个投影矩阵的 LoRA 结构，以及等效 batch size $=32$、3 epoch 的优化器调度，差异仅在训练样本构造层面。三份适配器通过独立指针文件与 vLLM LoRARequest 子系统衔接，支撑 H4--H10 全部训练侧对照。
+
+\paragraph{（3）CoT 推理分支的工程实现}
+第四章 4.4 节把 Zero-shot CoT 与 Few-shot CoT 统一为「Stage-1 推理生成 $\to$ 二级截断 $\to$ Stage-2 代码生成」两阶段流水线，固定 \texttt{MAX\_REASONING\_CHARS=1200} 与 \texttt{MAX\_REASONING\_PROMPT\_TOKENS=256} 两级长度预算，并在评测侧用可复现的 seed 派生方案抽取 few-shot 示例。训练侧与评测侧共享同一强标签评分函数与同一候选池规则，使得「训练与推理 $k$ 匹配」成为可硬编码的合法性约束。
+
+\paragraph{（4）二因素析因结论}
+第五章在上述方法框架下执行 H1--H10 评测，围绕「训练侧主效应 / 推理侧主效应 / 训练 $\times$ 推理交互 / few-shot 一致性」四类差分给出结论：
+\begin{itemize}
+    \item \textbf{主要结论待回填}：% TODO: 待 H1--H10 评测全部完成后，将 5.3 节确定性结论浓缩为 3--4 句话填入本处，与 Ch1.4 贡献 (3) 的析因设问一一对应；
+    \item \textbf{失效归因}：结合案例分析，识别出 Logic / Structural / Runtime / Timeout 四类失效模式，并给出各模式在方法间的分布变化；
+    \item \textbf{鲁棒性兜底}：关键超参数、随机 seed 与长度预算三类消融验证了上述主要结论不被单一扰动源主导。
+\end{itemize}
+综上，本文在统一协议下完整回答了「参数高效微调 $\times$ 结构化推理引导」在算法代码生成任务中的正交性、协同条件与边界——这一闭环既服务于论文主题本身，也为后续智能编程系统的优化方向提供了可复用的实证基础。

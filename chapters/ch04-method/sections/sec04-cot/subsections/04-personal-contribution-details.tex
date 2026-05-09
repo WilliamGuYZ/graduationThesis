@@ -1,0 +1,24 @@
+% Subsection 4.4.4: 关键实现细节与合法性约束
+
+4.4.1--4.4.3 给出了 CoT 分支的方法骨架，但在大规模 10 组评测中能否稳定产出可比较的 pass@k，还取决于若干工程层面的实现约束。本节汇总这些在主流程中未单列、但对结果可复现性起决定作用的细节。
+
+\paragraph{（1）两阶段 token 预算的边界处理}
+Stage-1 推理长度在极端样本上会占满生成预算，导致 Stage-2 失去有效输入。为此两阶段采用对称预算加联合硬截断：Stage-1 以 \texttt{MAX\_TOKENS\_REASONING=1024} 为上界，产物再经 \texttt{MAX\_REASONING\_CHARS=1200}、\texttt{MAX\_REASONING\_PROMPT\_TOKENS=256} 二级截断注入 Stage-2；Stage-2 以 \texttt{MAX\_TOKENS\_CODE=1024} 为上界；两阶段整体由 \texttt{VLLM\_MAX\_MODEL\_LEN=8192} 兜底。该分层预算使 CoT-FS 模式下即使挂 $k{=}2$ 条示例也不会触发上下文溢出。
+
+\paragraph{（2）评测侧 few-shot 的可复现随机化}
+4.4.2 节已说明评测种子取 \texttt{seed = 2026 + problem\_idx * 1000 + sample\_idx}。该构造有两点工程价值：
+\begin{itemize}
+    \item \textbf{跨运行复现}：同一题目同一采样编号始终抽到同一组示例，便于故障排查与结果比对；
+    \item \textbf{样本间去相关}：每个样本独立种子，避免所有 $N$ 次采样重复使用同一示例池，从而不让 pass@$k$ 被单一示例的质量主导。
+\end{itemize}
+
+\paragraph{（3）非法组合在脚本侧的强制拒绝}
+4.1 节与 4.4.2 节提出的「训练/推理 $k$ 匹配」约束在评测脚本中硬编码：
+\begin{itemize}
+    \item \texttt{eval\_lora\_cot\_passk.py} 在挂载 \texttt{LoRA\_cot\_zs} 时若 \texttt{--few-shot-k > 0}，直接退出；
+    \item 挂载 \texttt{LoRA\_cot\_fs($k^\ast$)} 时若 \texttt{--few-shot-k $\ne k^\ast$}，同样直接退出；
+    \item 以此阻止 4.1 节已从矩阵中排除的两组非法组合在误操作时被意外执行。
+\end{itemize}
+
+\paragraph{（4）Chat template 与特殊 token 的训练-推理对齐}
+训练阶段的 assistant 回复格式（「推理段 + 空行 + \verb|```python ... ```|」）、system/user 指令文本、chat template 选择（直接复用基座自带模板）均与 4.2.1 与 4.4.1 节推理侧完全一致，保证训练时 loss 覆盖的 token 分布与推理时实际生成的 token 分布同分布，避免因 prompt 微小差异导致 LoRA 在评测时显著失配。

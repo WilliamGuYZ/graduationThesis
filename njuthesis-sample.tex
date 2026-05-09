@@ -44,7 +44,8 @@
     % twoside,                % 双面模式，每一章从奇数页开始
     %
     %   字体设置，不填写则自动调用系统预装字体，详见手册
-    fontset = win % |mac|macoffice|fandol|none,
+    fontset = win, % |mac|macoffice|fandol|none,
+    decl-page,     % 启用本科原创性声明 / 诚信承诺书页
   ]{njuthesis}
 
 % 模板选项设置，包括个人信息、外观样式等
@@ -85,7 +86,7 @@
 
   本文基于 KodCode 数据集构建了面向训练与评测的一体化实验流程，并以 Qwen2.5-Coder-7B-Instruct 为基座，从训练侧与推理侧两个维度展开系统研究。训练侧覆盖 Base、纯代码 LoRA、零样本 CoT 格式 LoRA 与少样本 CoT 格式 LoRA 共四种配置，推理侧覆盖 Direct、Zero-shot CoT 与 Few-shot CoT 三种提示结构；以“训练侧与推理侧若均为 CoT，则示例数量必须一致”为合法性约束，构成共十组有效实验（H1～H10）的二因素析因框架。实验采用统一提示模板与基于自动化单元测试的 pass@k 评测流程，从可执行正确性角度对训练侧主效应、推理侧主效应、二者的交互效应以及少样本边际效应的一致性分别给予量化分析。
 
-  实验结果表明：相较基座模型，LoRA 微调能够有效提升算法代码生成的稳定性与正确性；在此基础上引入 CoT 推理后，模型在复杂问题上的推理连贯性进一步增强；当训练侧与推理侧在示例配置上协同一致时，Few-shot 对解题步骤组织与代码生成鲁棒性的提升最为明显。通过对十组实验主效应与交互项的系统分析，本文在一致协议下验证了“参数高效微调 × 结构化推理引导”在算法代码生成任务中的正交增益与协同条件。本人主要工作集中于 Few-shot CoT 方案设计、训练—推理两侧 CoT 的对照实验实现与 H1～H10 实验链路打通，为论文形成了关键增量贡献，并为后续智能编程系统优化提供了可复用的实证基础。
+  实验结果表明：相较基座模型，LoRA 微调能够有效提升算法代码生成的稳定性与正确性；在此基础上引入 CoT 推理后，模型在复杂问题上的推理连贯性进一步增强；当训练侧与推理侧在示例配置上协同一致时，Few-shot 对解题步骤组织与代码生成鲁棒性的提升最为明显。通过对十组实验主效应与交互项的系统分析，本文在一致协议下验证了“参数高效微调 × 结构化推理引导”在算法代码生成任务中的正交增益与协同条件，并基于端到端打通的 H1～H10 实验链路，为后续智能编程系统优化提供了可复用的实证基础。
 \end{abstract}
 
 \begin{abstract*}
@@ -93,7 +94,7 @@
 
   We build an integrated train-evaluate pipeline based on KodCode-style data, and study Qwen2.5-Coder-7B-Instruct along two orthogonal dimensions: a training side covering four configurations (Base, code-only LoRA, zero-shot CoT-format LoRA, and few-shot CoT-format LoRA) and an inference side covering three prompting structures (Direct, Zero-shot CoT, and Few-shot CoT). Imposing the consistency constraint that whenever both sides employ CoT their exemplar counts must match, we obtain a two-factor factorial design with ten valid settings (H1–H10). All settings are evaluated under a unified prompt template and execution-based pass@k unit tests, which allow us to quantify the main effect of the training side, the main effect of the inference side, their interaction, and the consistency of the few-shot marginal effect across training sides.
 
-  Empirical findings show that LoRA improves generation stability and executable correctness over the base model; adding CoT further enhances reasoning coherence on complex problems; and when the training-side and inference-side exemplar configurations are aligned, Few-shot yields the most pronounced gains in step organization and generation robustness. A systematic analysis of main effects and interaction terms across the ten settings validates, under a single protocol, the orthogonal benefits and cooperative conditions of combining parameter-efficient adaptation with structured reasoning guidance for algorithmic code generation. My primary contribution is the design and implementation of the Few-shot CoT branch, including the training–inference dual-CoT comparative framework and the end-to-end integration of the H1–H10 pipeline, which provides a key incremental contribution to this thesis and a reproducible basis for future optimization of intelligent programming systems.
+  Empirical findings show that LoRA improves generation stability and executable correctness over the base model; adding CoT further enhances reasoning coherence on complex problems; and when the training-side and inference-side exemplar configurations are aligned, Few-shot yields the most pronounced gains in step organization and generation robustness. A systematic analysis of main effects and interaction terms across the ten settings validates, under a single protocol, the orthogonal benefits and cooperative conditions of combining parameter-efficient adaptation with structured reasoning guidance for algorithmic code generation, and the end-to-end H1–H10 pipeline established in this work provides a reproducible basis for future optimization of intelligent programming systems.
 \end{abstract*}
 
 % 生成目录

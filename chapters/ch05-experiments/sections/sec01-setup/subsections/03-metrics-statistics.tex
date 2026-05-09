@@ -1,0 +1,35 @@
+% Subsection 5.1.3: 评测指标与统计方法
+
+\paragraph{（1）主指标：pass@k}
+以 2.4 节定义的 pass@$k$ 为唯一主指标，具体沿用 Chen 等提出的无偏估计形式：
+\[
+\mathrm{pass@}k \;=\; \frac{1}{|\mathcal{D}|}\sum_{i \in \mathcal{D}}\!\left[\,1 - \binom{n-c_i}{k}\Big/\binom{n}{k}\,\right],
+\]
+其中 $n{=}\texttt{NUM\_SAMPLES}{=}10$ 为每题采样数，$c_i$ 为第 $i$ 题通过官方单测的候选数，$\mathcal{D}$ 为评测集中满足 $n_i{=}n$ 的题集。本章固定报告 $k \in \{1, 5, 10\}$ 三档：pass@1 反映单次采样正确率、pass@5 反映「是否有思路」、pass@10 反映「是否在采样预算内可达」。
+
+\paragraph{（2）差分口径}
+第 5.3 节所有分析均在 pass@$k$ 层面做差分：
+\begin{itemize}
+    \item \textbf{主效应}：$\Delta^{\text{train}}_{m} = \mathrm{H}m - \mathrm{H1}$（$m \in \{4,7,9\}$）、$\Delta^{\text{infer}}_{m} = \mathrm{H}m - \mathrm{H1}$（$m \in \{2,3\}$）；
+    \item \textbf{交互效应}（difference-in-differences）：
+    \[
+    \Delta^{2}_{(a,b;c,d)} = (\mathrm{H}a - \mathrm{H}b) - (\mathrm{H}c - \mathrm{H}d),
+    \]
+    典型取 $(8,7;2,1)$、$(10,9;3,1)$、$(5,4;2,1)$、$(6,4;3,1)$；
+    \item \textbf{few-shot 一致性}：对比 $\mathrm{H3}-\mathrm{H2}$ 与 $\mathrm{H6}-\mathrm{H5}$ 两条边际在 pass@$k$ 上的符号与量级。
+\end{itemize}
+
+\paragraph{（3）统计稳健性}
+为避免单次评测受 vLLM 采样随机性主导，本章采取以下两条做法：
+\begin{itemize}
+    \item \textbf{多采样}：$n{=}10$ 本身已对每题做多次抽样，直接降低了 pass@1 的方差；
+    \item \textbf{多 seed 复跑}（条件允许时）：固定 $\ge 2$ 个 seed 重复评测，结果以均值 $\pm$ 标准差报告，用以观察小样本情形下差分信号是否稳定。
+\end{itemize}
+
+\paragraph{（4）辅助观测量}
+除主指标外，评测脚本额外记录三项辅助量，用于 5.3 节案例分析：
+\begin{itemize}
+    \item \textbf{超时率}：\texttt{TIMEOUT=5} 秒触发次数占总生成请求比例，反映死循环/过深递归等病态行为；
+    \item \textbf{原始 solution 通过率}：用以监控执行器本身是否有环境污染；
+    \item \textbf{CoT 评测元数据}：\texttt{mode / use\_lora / lora\_path / few\_shot\_k}，每份 JSON 产物自动记录，便于后续回溯。
+\end{itemize}

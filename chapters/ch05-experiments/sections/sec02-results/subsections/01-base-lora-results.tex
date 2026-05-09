@@ -1,0 +1,38 @@
+% Subsection 5.2.1: Base 与 LoRA 实验结果
+
+本节汇总 4 组训练侧对照（H1、H4、H7、H9，推理侧固定为 Direct）的 pass@$k$。所有数值按 4.1 节表~\ref{tab:ch4-matrix} 结果命名规则从 \texttt{evaluation/results/} 读取。
+
+\paragraph{（1）主结果表}
+表~\ref{tab:ch5-direct} 给出 Direct 推理侧下四种训练配置的 pass@$k$，三个 $k$ 档同时给出以便观察「单次命中」与「预算内命中」之间的差距。
+
+\begin{table}[!htb]
+  \centering
+  \caption{Direct 推理侧下四种训练配置的 pass@$k$（单位：\%）}
+  \label{tab:ch5-direct}
+  \footnotesize
+  \begin{tabular}{lllccc}
+    \toprule
+    编号 & 训练侧 & 推理侧 & pass@1 & pass@5 & pass@10 \\
+    \midrule
+    H1 & Base               & Direct & \textit{TODO} & \textit{TODO} & \textit{TODO} \\
+    H4 & LoRA\_code         & Direct & \textit{TODO} & \textit{TODO} & \textit{TODO} \\
+    H7 & LoRA\_cot\_zs      & Direct & \textit{TODO} & \textit{TODO} & \textit{TODO} \\
+    H9 & LoRA\_cot\_fs($k$) & Direct & \textit{TODO} & \textit{TODO} & \textit{TODO} \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+% TODO: 跑完 H1/H4/H7/H9 后，将上表 TODO 占位替换为实际 pass@k 数值；
+%       同步将本节文字中的「A/B/C」替换为具体百分点差值。
+
+\paragraph{（2）观察要点}
+表~\ref{tab:ch5-direct} 在主干上对应以下三条差分，具体数值分析延至 5.3.1 节：
+\begin{itemize}
+    \item \textbf{H4 − H1}：纯代码 LoRA 在 Direct 推理下的训练侧主效应；
+    \item \textbf{H7 − H4}：将 CoT 格式注入训练监督后，相对仅代码监督的增益；
+    \item \textbf{H9 − H7}：在 CoT 监督基础上进一步注入 $k$ 条训练 prompt 示例后的独立增益。
+\end{itemize}
+初步观察表明，训练侧从 Base 依次过渡到 \texttt{LoRA\_code}、\texttt{LoRA\_cot\_zs}、\texttt{LoRA\_cot\_fs($k$)} 时，pass@$k$ 在各档上均呈\textit{TODO：单调上升 / 先升后降 / 基本持平}（待实验数据回填）的走势——该走势是 5.3.1 节讨论 LoRA 有效性的起点。
+
+\paragraph{（3）数据自检}
+除主结果外，每份 Direct 评测 JSON 都记录了原始 \texttt{solution} 在本运行环境下的通过率，四组间应保持一致且接近 100\%；若出现显著偏离，则说明该次运行的执行器或依赖发生变化，需要回滚环境后重跑，避免把环境扰动误计为方法差异。

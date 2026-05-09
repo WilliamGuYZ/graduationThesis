@@ -1,0 +1,32 @@
+% Subsection 5.3.1: LoRA 有效性分析
+
+本节聚焦训练侧主效应，基于 5.2.1 节表~\ref{tab:ch5-direct} 取出 $\{$H4, H7, H9$\} - $H1 三条差分量，从「引入 LoRA 是否有效」「CoT 监督是否进一步有效」「训练侧 few-shot 是否有独立增益」三层依次展开。
+
+\paragraph{（1）纯代码 LoRA 的基础增益}
+令 $\Delta_1 = \mathrm{H4} - \mathrm{H1}$。在 Direct 推理下，$\Delta_1$ 直接衡量把「纯代码 solution」作为监督目标对基座带来的增益。预期结论分三种情形：
+\begin{itemize}
+    \item $\Delta_1 > 0$ 且在 pass@1 与 pass@10 上同号：说明 LoRA 提升的是「稳定产出正确代码」的能力，而非单纯扩大候选多样性；
+    \item $\Delta_1 > 0$ 但仅在 pass@1 上显著：说明训练主要收敛到「更高概率给出主流解答」，对长尾题的覆盖改善有限；
+    \item $\Delta_1 \approx 0$ 或 $< 0$：说明训练集与评测集的分布差异主导了结果，或 LoRA 超参未匹配本任务——此时应回到第四章的超参数设置做敏感性检查。
+\end{itemize}
+% TODO: 回填 $\Delta_1$ 在 pass@1/5/10 上的具体数值，并选择上述三种情形之一给出确定性结论。
+
+\paragraph{（2）CoT 监督的增量}
+令 $\Delta_2 = \mathrm{H7} - \mathrm{H4}$。该量固定推理侧为 Direct，只改变训练侧的监督目标（纯代码 $\to$ 推理+代码），因此严格剥离了「训练时是否见过 CoT 格式」的独立贡献。预期以下两条表现之一：
+\begin{itemize}
+    \item $\Delta_2 > 0$：即使推理时仍走单阶段 Direct，模型也能从训练阶段吸收推理习惯，说明 CoT 监督把「思考链」内化进参数；
+    \item $\Delta_2 \le 0$：监督目标中的推理段对 Direct 推理反而造成干扰，说明 CoT 知识必须在推理侧显式展开才有收益，这一结论将与 5.3.2 节「训练-推理对称性」讨论互为印证。
+\end{itemize}
+% TODO: 回填 $\Delta_2$ 数值并在上述两条中给出确定性结论。
+
+\paragraph{（3）训练侧 few-shot 的独立增益}
+令 $\Delta_3 = \mathrm{H9} - \mathrm{H7}$。两组的训练目标都是「推理+代码」，差别仅在训练 prompt 是否前置 $k$ 条示例。该差分回答本文区别于 8 组版本析因的核心问题——\textbf{在监督目标已经含 CoT 的前提下，继续把 few-shot 写进训练上下文是否还有效}。三种典型情形：
+\begin{itemize}
+    \item $\Delta_3 > 0$：训练时见过 few-shot 会让 LoRA 学到「如何使用示例」本身，该信号会在推理侧 Direct 下仍然起作用；
+    \item $\Delta_3 \approx 0$：few-shot 的作用局限在推理侧，训练阶段注入示例仅起到「扩大上下文规模」的效果，没有形成可内化的参数知识；
+    \item $\Delta_3 < 0$：训练 prompt 过长导致 assistant 段在 \texttt{MAX\_LENGTH=1024} 约束下被截断，反而削弱监督信号——此时应增大 \texttt{MAX\_LENGTH} 或降低 $k$ 再做敏感性对照。
+\end{itemize}
+% TODO: 回填 $\Delta_3$ 数值并与 5.3.2 节 few-shot 边界分析互相引用。
+
+\paragraph{（4）LoRA 与基线的稳定性对比}
+除 pass@$k$ 主指标外，本节还关注 LoRA 对「生成稳定性」的改变。稳定性由两项观测量间接刻画：超时率（死循环/深递归比例）与原始 \texttt{solution} 自检率的偏离幅度。预期 LoRA 会降低前者、不影响后者；若两者同步劣化，说明训练过拟合到了少数长解答模板，需要在 5.3.3 节做案例复查。

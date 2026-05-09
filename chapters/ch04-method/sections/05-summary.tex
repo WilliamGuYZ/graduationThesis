@@ -1,0 +1,10 @@
+% Section 4.5: 本章小结
+
+本章以 4.1 节的两因素析因设计为主干，自上而下给出了 10 组实验 H1--H10 对应的方法实现：
+\begin{itemize}
+    \item \textbf{整体框架}：训练侧 $\times$ 推理侧二因素析因、合法性约束排除 2 组后的 10 组有效实验矩阵、训练-评测两级流水线、以及第五章三类主要对照（主效应、交互效应、few-shot 一致性）的取数口径（4.1 节）；
+    \item \textbf{Base 分支}：单阶段 chat prompt、\texttt{NUM\_SAMPLES=10} / \texttt{TEMPERATURE=0.3} 的评测采样口径、子进程隔离执行与 \texttt{TIMEOUT=5} 秒超时、pass@k 无偏估计公式，锁定 H1 作为共同基线（4.2 节）；
+    \item \textbf{LoRA 分支}：三种监督目标对应的 chat 样本构造、只对 assistant 段计 loss 的掩码策略、$r{=}32/\alpha{=}64$ 与覆盖 attention+MLP 的 LoRA 结构、等效 batch size $=32$ 的优化器调度，以及从指针文件到 vLLM LoRARequest 的挂载链路，覆盖 H4--H10 全部训练侧（4.3 节）；
+    \item \textbf{CoT 分支}：两阶段推理流水线、推理段二级截断、few-shot 按强标签检索与可复现种子、$k$ 匹配的脚本级强制拒绝，以及把 6 组 CoT 实验重组为推理侧主效应、训练 $\times$ 推理交互、few-shot 一致性三组对照的分析视角（4.4 节）。
+\end{itemize}
+以上方法设计在本章内部已完整自洽：所有训练与评测超参、prompt 模板、随机性来源、合法性约束均已固定，10 组实验仅因 4.1 节表~\ref{tab:ch4-matrix} 中的「训练侧 $\times$ 推理侧」取值不同而产生对照。第五章将在此方法框架下执行 H1--H10 全部评测并给出 pass@1/5/10 层面的定量结论。
