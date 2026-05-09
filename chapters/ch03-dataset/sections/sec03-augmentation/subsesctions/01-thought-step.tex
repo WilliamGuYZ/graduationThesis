@@ -1,6 +1,6 @@
 % Subsection 3.3.1: 思维步骤标注
 
-思维步骤（\texttt{thought\_step}）是 CoT 监督与 CoT 推理两条路径的共同信号。为使其在不同训练侧（\texttt{LoRA\_cot\_zs}、\texttt{LoRA\_cot\_fs}）与推理侧（\texttt{CoT-ZS}、\texttt{CoT-FS}）配置下具备可比性，本文由 \texttt{annotate\_thought\_steps.py} 调用教师模型 \texttt{deepseek-chat} 统一离线生成，具体协议如下。
+思维步骤（\texttt{thought\_step}）是 CoT 监督与 CoT 推理两条路径的共同信号。为使其在不同训练侧（\texttt{LoRA\_cot\_zs}、\texttt{LoRA\_cot\_fs}）与推理侧（\texttt{CoT-ZS}、\texttt{CoT-FS}）配置下具备可比性，本文由 \pth{annotate_thought_steps.py} 调用教师模型 \texttt{deepseek-chat} 统一离线生成，具体协议如下。
 
 \paragraph{（1）监督信号的生成定位}
 教师模型同时看到题目与参考解答，仅被要求产出「从题目自然导向该解答」的推理，而非重新求解。这样可规避教师自身解题能力波动，保证 \texttt{thought\_step} 与 \texttt{solution} 严格一致，同时避免把教师的错误传导到学生模型的监督信号中。

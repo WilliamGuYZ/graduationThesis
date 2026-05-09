@@ -1,6 +1,6 @@
 % Subsection 3.2.2: 解答与测试一致性校验
 
-格式层只能保证字段形态正确，无法保证 \texttt{solution} 与 \texttt{test} 语义匹配；KodCode 中确实存在解答与测试版本不同步、依赖未声明、或测试覆盖的函数名与 \texttt{test\_info} 不一致等问题。为此 \texttt{validate\_code\_with\_test.py} 实现了轻量执行器 \texttt{test\_solution\_code}，在数据清洗与 pass@k 评测两个场景复用同一套判定逻辑，避免口径漂移。
+格式层只能保证字段形态正确，无法保证 \texttt{solution} 与 \texttt{test} 语义匹配；KodCode 中确实存在解答与测试版本不同步、依赖未声明、或测试覆盖的函数名与 \texttt{test\_info} 不一致等问题。为此 \pth{validate_code_with_test.py} 实现了轻量执行器 \texttt{test\_solution\_code}，在数据清洗与 pass@k 评测两个场景复用同一套判定逻辑，避免口径漂移。
 
 \paragraph{（1）执行策略}
 校验以「子进程 + 标准库」为原则，不引入第三方 runner。脚本将 \texttt{solution} 与 \texttt{test} 写入临时目录并在独立子进程中运行：进程隔离保证被测代码的全局副作用（如修改 \texttt{sys.path}、覆盖内置名）不污染主进程，超时上限用于杀掉死循环与指数回溯等病态用例。
