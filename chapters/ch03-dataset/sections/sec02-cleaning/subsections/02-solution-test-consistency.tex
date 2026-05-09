@@ -1,12 +1,12 @@
 % Subsection 3.2.2: 解答与测试一致性校验
 
-格式规范化只能保证字段形态正确，无法保证「\texttt{solution} 与 \texttt{test} 语义匹配」。KodCode 原始数据中确实存在解答与测试版本不同步、依赖未声明、或测试覆盖的函数名与 \texttt{test\_info} 不一致等问题。为确保训练标签可信、评测判据可靠，本文在 \texttt{validate\_code\_with\_test.py} 中实现了一个轻量执行器 \texttt{test\_solution\_code}，并在转换阶段与评测阶段共用同一套判定逻辑。
+格式层只能保证字段形态正确，无法保证 \texttt{solution} 与 \texttt{test} 语义匹配；KodCode 中确实存在解答与测试版本不同步、依赖未声明、或测试覆盖的函数名与 \texttt{test\_info} 不一致等问题。为此 \texttt{validate\_code\_with\_test.py} 实现了轻量执行器 \texttt{test\_solution\_code}，在数据清洗与 pass@k 评测两个场景复用同一套判定逻辑，避免口径漂移。
 
 \paragraph{（1）执行策略}
-校验以「子进程 + 标准库」为原则，不引入第三方 runner：将 \texttt{solution} 与 \texttt{test} 依次写入临时目录，通过 \texttt{python -m pytest} 或等价的 \texttt{unittest} 入口在独立进程中运行。子进程隔离保证被测代码中的全局副作用（如修改 \texttt{sys.path}、覆盖内置名）不污染主进程；超时上限用于杀掉死循环与指数级回溯等病态用例。
+校验以「子进程 + 标准库」为原则，不引入第三方 runner。脚本将 \texttt{solution} 与 \texttt{test} 写入临时目录并在独立子进程中运行：进程隔离保证被测代码的全局副作用（如修改 \texttt{sys.path}、覆盖内置名）不污染主进程，超时上限用于杀掉死循环与指数回溯等病态用例。
 
 \paragraph{（2）判定语义}
-返回 \texttt{(ok, err)} 二元组：\texttt{ok=True} 当且仅当所有断言通过且进程退出码为 0；其余一切情形（包括测试失败、导入错误、\texttt{SyntaxError}、超时）均计为失败并回填简短错误消息。这一「唯一正确定义」贯穿三个场景——原始数据清洗（丢弃无法复现的条目）、评测阶段（计算 pass@k）、以及训练数据产出前的最终抽检，避免不同阶段的判定口径漂移。
+返回 \texttt{(ok, err)} 二元组：\texttt{ok=True} 当且仅当全部断言通过且进程退出码为 $0$；测试失败、导入错误、\texttt{SyntaxError}、超时等一切情形均记为失败并回填简短错误消息。这一「唯一正确定义」贯穿数据清洗与评测两个阶段，避免不同阶段判定口径漂移。
 
 \paragraph{（3）一致性收益}
-在 \texttt{convet\_KodCode\_to\_jsonl.py} 中对 10000 条目标样本的扫描日志显示，格式层已过滤绝大部分结构不合规条目，而执行层进一步剔除「语法可解析但语义不正确」的样本。最终保留的样本满足「官方 \texttt{solution} 能通过其自带 \texttt{test}」这一硬约束，为后续训练与评测提供了严格上界——评测集上参考解答的 pass@1 实测为 $0.996$（见 3.4 节），接近 $1$，说明剩余失败几乎全部来自非确定性因素（如浮点精度、系统时钟）而非数据质量缺陷。
+最终保留的样本满足「官方 \texttt{solution} 能通过其自带 \texttt{test}」这一硬约束，为后续训练与评测提供严格上界。评测集上参考解答 pass@1 实测为 $0.996$（见 3.4 节），接近 $1$，说明剩余失败几乎全部来自执行非确定性因素（如浮点精度、系统时钟）而非数据质量缺陷。

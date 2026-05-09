@@ -1,16 +1,71 @@
 % Section 3.1: 数据来源与任务定义
 
-本章构建的数据集用于 Qwen2.5-Coder-7B-Instruct 的 LoRA 微调与 pass@k 评测，需同时满足三项要求：题目覆盖主流算法范式、解答代码可被单元测试自动判定正确性、以及具备支持思维链监督与少样本检索所需的结构化标注。综合考虑规模、质量与可执行性，本文选取公开的 KodCode 算法题数据作为原始来源，其条目天然附带题目描述、参考解答与针对性单测，是构建「生成—执行—判定」闭环评测的良好起点。
+本章为 Qwen2.5-Coder-7B-Instruct 的 LoRA 微调与 pass@k 评测构建统一语料。具体要求有三：题目覆盖主流算法范式、解答代码可被单元测试自动判定正确性、并具备支持思维链监督与少样本检索的结构化标注。综合规模、质量与可执行性考虑，本文选取公开的 KodCode 作为原始来源——其条目天然附带题目、参考解答与针对性单测，契合「生成—执行—判定」闭环的构建需要。
 
-\paragraph{（1）原始数据形态}
-原始 KodCode 以 Parquet 列式存储，单条记录包含 \texttt{question}（自然语言题目）、\texttt{solution}（Python 参考解答）、\texttt{test}（pytest 风格单测脚本）与 \texttt{test\_info}（对被测函数签名的结构化描述，含 \texttt{function\_declaration}、\texttt{function\_name}、\texttt{parameter\_list} 等字段）。脚本 \texttt{convet\_KodCode\_to\_jsonl.py} 从原始文件中按顺序扫描，仅保留上述四个字段，并逐条调用单测执行器，直至凑齐目标条数（本文取 \texttt{HEAD\_N}=10000）。
+\paragraph{（1）原始字段}
+原始 KodCode 以 Parquet 列式存储，每条记录含四个字段：\texttt{question}（自然语言题目）、\texttt{solution}（Python 参考解答）、\texttt{test}（pytest 风格单测脚本）与 \texttt{test\_info}（被测函数签名的结构化描述，含 \texttt{function\_declaration}、\texttt{function\_name}、\texttt{parameter\_list} 等）。脚本 \texttt{convet\_KodCode\_to\_jsonl.py} 按顺序扫描原始文件、仅保留上述字段并逐条调用单测执行器，直至凑齐 \texttt{HEAD\_N}=10000 条目标样本。
 
-\paragraph{（2）任务形式化}
-给定题目 $q$，模型需输出可直接执行的 Python 解答 $\hat{s}$，判定准则为：将 $\hat{s}$ 与官方测试脚本 $t$ 组合、在隔离子进程中运行，若全部断言通过则记为一次成功。令 $n$ 为采样次数、$c$ 为其中成功次数，则
+\paragraph{（2）任务形式化与评测指标}
+给定题目 $q$，模型需输出可直接执行的 Python 解答 $\hat{s}$：将 $\hat{s}$ 与官方测试 $t$ 组合、在隔离子进程中运行，若全部断言通过则记为一次成功。令 $n$ 为采样次数、$c$ 为其中成功次数，则
 \[
 \text{pass@}k \;=\; \mathbb{E}_{q}\!\left[\,1 - \binom{n-c}{k}\Big/\binom{n}{k}\,\right],
 \]
-作为数据集层面的主评测指标。该指标同时服务于训练侧与推理侧的所有对照（见第四章 H1--H10 实验矩阵）。
+作为数据集层面的主评测指标，服务于第四章 H1--H10 全部训练/推理对照。为避免无效样本污染训练与评测，所有后续环节均以「单测可判定且参考解答通过」为硬约束——这条约束同时决定了 3.2 节的校验流程与 3.4 节的划分策略。
 
-\paragraph{（3）条目有效性前提}
-为避免无意义样本污染训练与评测，所有后续环节都以「单测可判定且原始解答通过」为硬约束。这一约束直接决定了第 3.2 节的校验流程与第 3.4 节的划分策略——评测集的通过率上限必须由参考解答本身保证，模型侧的 pass@k 才具备可解释的对照基线。
+\paragraph{（3）数据流水线总览}
+从原始 Parquet 到最终训练/评测 JSONL，整体可视为五个串行阶段，如图~\ref{fig:ch3-pipeline} 所示，后续 3.2--3.4 节即按此流程依次展开。
+
+\begin{figure}[!htb]
+  \centering
+  \begin{tikzpicture}[
+    node distance=6mm and 5mm,
+    stage/.style={draw, rounded corners=2pt, align=center, minimum height=9mm, minimum width=22mm, font=\small},
+    tag/.style={font=\footnotesize\itshape, align=center},
+    arr/.style={-{Stealth[length=2mm]}, thick},
+  ]
+    \node[stage] (s1) {原始\\ Parquet};
+    \node[stage, right=of s1] (s2) {格式规范化\\ + 单测校验};
+    \node[stage, right=of s2] (s3) {思维步骤\\ 标注};
+    \node[stage, right=of s3] (s4) {算法标签\\ 标注};
+    \node[stage, right=of s4] (s5) {顺序划分\\ 9{:}1};
+
+    \draw[arr] (s1) -- (s2);
+    \draw[arr] (s2) -- (s3);
+    \draw[arr] (s3) -- (s4);
+    \draw[arr] (s4) -- (s5);
+
+    \node[tag, below=1mm of s1] {KodCode.parquet};
+    \node[tag, below=1mm of s2] {KodCode.jsonl\\ ($\le$10000)};
+    \node[tag, below=1mm of s3] {+\texttt{thought\_step}};
+    \node[tag, below=1mm of s4] {+\texttt{tags}};
+    \node[tag, below=1mm of s5] {train / eval\\ ($\approx$9000 / 1000)};
+  \end{tikzpicture}
+  \caption{数据流水线：从原始 Parquet 到训练/评测 JSONL 的五阶段流程}
+  \label{fig:ch3-pipeline}
+\end{figure}
+
+\paragraph{（4）单条样本示例}
+为直观呈现字段形态，图~\ref{fig:ch3-sample} 摘录评测集首条样本（「将数组划分为 $k$ 个等和子集」问题）的 JSONL 记录，省略号用于折行压缩篇幅，实际存储为一条单行 JSON。可见单条样本同时承载题干、参考解答、单测脚本、函数签名结构、教师模型生成的分步推理与算法标签六类信息，共同支撑后续训练侧与推理侧的所有对照配置。此外，少样本检索所需的 \texttt{strong\_tags} 不作为独立字段持久化，而在检索时对 \texttt{tags} 与 3.3.2 节定义的强标签常量取交集即时派生，以保证训练与评测两侧的检索口径严格一致。
+
+\begin{figure}[!htb]
+\begin{footnotesize}
+\begin{verbatim}
+{
+  "question":  "You are given an array of integers `arr` and an integer `k`.
+                Partition the array into exactly `k` subsets ...",
+  "solution":  "def subsets_with_sum(arr, k, target_sum, used): ...\n
+                def can_partition(arr, k): ...",
+  "test":      "from solution import can_partition\n
+                def test_can_partition_with_valid_partition(): ...",
+  "test_info": [{"function_name": "can_partition",
+                 "function_declaration": "def can_partition(arr, k):",
+                 "parameter_list": "(arr, k)", "docstring": "..."}, ...],
+  "thought_step": "Step 1: [Understand] - ... Step 5: [Verify] - ...",
+  "tags":      ["Backtracking", "Subset Sum", "Partition Problem"]
+}
+\end{verbatim}
+\end{footnotesize}
+\vspace{-2mm}
+\caption{评测集首条样本的 JSONL 字段示意（内容经截断折行）}
+\label{fig:ch3-sample}
+\end{figure}
