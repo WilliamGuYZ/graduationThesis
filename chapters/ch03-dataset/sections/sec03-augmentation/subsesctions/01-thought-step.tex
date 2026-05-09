@@ -1,0 +1,12 @@
+% Subsection 3.3.1: 思维步骤标注
+
+思维步骤（\texttt{thought\_step}）是本文 CoT 监督与 CoT 推理两条路径的共同训练/评测信号。为使其在不同训练侧（\texttt{LoRA\_cot\_zs}、\texttt{LoRA\_cot\_fs}）与推理侧（\texttt{CoT-ZS}、\texttt{CoT-FS}）配置下具备可比性，本文采用统一的离线生成协议，由 \texttt{annotate\_thought\_steps.py} 调用教师模型 \texttt{deepseek-chat} 为每条 \texttt{(question, solution)} 生成一段自然语言推理。
+
+\paragraph{（1）监督信号的生成定位}
+教师模型同时看到题目与参考解答，仅被要求产出「从题目自然导向该解答」的推理过程，而非重新求解。这样可规避教师模型自身解题能力的波动，保证思维链与解答严格一致；同时避免将教师模型的错误传导到学生模型的监督信号中。
+
+\paragraph{（2）Prompt 与格式约束}
+系统提示将教师模型定位为「算法讲师」，用户提示要求输出 3$\sim$5 条带标签的编号步骤，标签取自封闭集合 \{Understand, Approach, Edge Cases, Implement, Verify\}，单条格式为 \texttt{Step N: [Tag] - explanation}，且明确「只输出步骤，不得复述代码」。封闭标签集一方面强迫教师覆盖「理解题意—拟定算法—处理边界—实现—自检」五个阶段中的关键子集，另一方面使后续质量抽检可以按标签分布做结构化统计。\texttt{MAX\_THOUGHT\_TOKENS=512}、\texttt{temperature=0.3} 在长度与稳定性之间取折中，避免步骤过长淹没解答或过度随机。
+
+\paragraph{（3）工程鲁棒性}
+32 路线程并发调用 API，对每条请求最多重试三次，遇到 HTTP 429 时改用 15 秒定长回退、其余错误走指数退避。输出文件以追加方式写入并按 \texttt{question} 建立已完成集合，支持断点续标；最终失败的样本仅写入空 \texttt{thought\_step} 并计入失败计数，不阻断整体流程。此策略保证在网络波动与配额限制下整批标注仍可收敛，为后续 CoT 训练与 few-shot 检索提供稳定的语料底座。

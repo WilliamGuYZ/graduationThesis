@@ -1,0 +1,7 @@
+% Section 3.5: 本章小结
+
+本章围绕算法代码生成任务的评测需求，构建了一条「原始 Parquet $\to$ 规范化 JSONL $\to$ 可执行校验 $\to$ 思维链与标签增强 $\to$ 训练评测划分」的完整数据流水线，为后续微调与析因对照提供了统一且可复现的语料底座。
+
+整体工作可归纳为四点：其一，以「单元测试可判定」为硬约束，通过 \texttt{convet\_KodCode\_to\_jsonl.py} 与 \texttt{validate\_code\_with\_test.py} 共用同一执行器，保证数据清洗阶段与 pass@k 评测阶段判定口径完全一致，避免口径漂移带来的指标噪声；其二，由教师模型 \texttt{deepseek-chat} 在「同时看到题目与参考解答」的条件下离线生成封闭标签的思维步骤，确保 \texttt{thought\_step} 与 \texttt{solution} 严格一致，为 CoT 监督与 CoT 推理两条路径提供可比的信号来源；其三，将算法标签显式切分为强/弱两级并硬性要求每条样本至少含一个强标签，使 few-shot 检索聚焦于「算法骨架」而非通用数据类型，直接服务于 \texttt{LoRA\_cot\_fs} 训练与 \texttt{CoT-FS} 推理的共享检索索引；其四，以顺序划分得到规模稳定的 $1000$ 条评测集，其上参考解答 pass@1 达 $0.996$，作为模型侧实验的名义上界。
+
+最终产出的 \texttt{KodCode\_train.jsonl} 与 \texttt{KodCode\_eval.jsonl} 共同支撑第四章将展开的 $H_1$--$H_{10}$ 训练侧 $\times$ 推理侧二因素析因实验：同一训练集承载 \texttt{LoRA\_code}、\texttt{LoRA\_cot\_zs}、\texttt{LoRA\_cot\_fs}($k$) 三种训练侧配置，同一评测集承载 \texttt{Direct}、\texttt{CoT-ZS}、\texttt{CoT-FS}($k$) 三种推理侧配置。训练集与评测集在题目层面严格不相交，且两侧共用的 \texttt{thought\_step} 与 \texttt{strong\_tags} 标注来自统一协议，这些一致性正是后续主效应与交互效应估计具备可解释性的前提。

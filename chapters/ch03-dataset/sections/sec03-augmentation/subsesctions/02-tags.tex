@@ -1,0 +1,12 @@
+% Subsection 3.3.2: 标签体系
+
+少样本推理（\texttt{CoT-FS}）与少样本训练（\texttt{LoRA\_cot\_fs}）都需要在同一数据集中按算法范式检索到与目标题目「真正同类」的示例，因此本文不直接使用原始题库自带的扁平标签，而是通过 \texttt{annotate\_algorithm\_tags.py} 构建一套「强/弱二级标签」体系，由教师模型基于 \texttt{(question, solution)} 共同判定。
+
+\paragraph{（1）强弱标签的划分动机}
+扁平标签的主要问题是区分度失衡：\texttt{Array}、\texttt{String}、\texttt{Math}、\texttt{Recursion} 等标签在题库中普遍出现，用于相似度匹配时几乎对所有样本都命中，反而稀释了「算法骨架」层面的真正信号。本文据此把标签词表显式切分为强标签 \texttt{STRONG\_TAGS} 与弱标签 \texttt{WEAK\_TAGS}：前者刻画具有高判别力的算法骨架（如 \texttt{Dynamic Programming}、\texttt{BFS}、\texttt{Two Pointers}、\texttt{Monotonic Stack}、\texttt{Union Find} 等），后者保留通用数据类型与宽泛范式（如 \texttt{Array}、\texttt{Tree}、\texttt{Simulation}、\texttt{Brute Force}）作为辅助描述。
+
+\paragraph{（2）标注协议与硬约束}
+教师模型仍为 \texttt{deepseek-chat}，输出控制在 \texttt{MAX\_TOKENS=96} 以内，要求返回标签列表。本文施加一条硬约束：每条样本必须至少包含一个强标签；若教师模型仅返回弱标签，则走与 3.3.1 节一致的重试机制，重新采样直至满足约束或达到重试上限。该约束保证了后续少样本检索在「算法骨架层」始终有信号可用，而非被大量通用标签拉平。
+
+\paragraph{（3）字段落地与下游用法}
+最终产出 \texttt{KodCode\_annotate.jsonl}，在原有字段基础上附加 \texttt{tags}（全部标签）与 \texttt{strong\_tags}（仅强标签子集）两项。训练阶段 \texttt{LoRA\_cot\_fs} 以 \texttt{strong\_tags} 作为示例检索键拼装 $k$ 条 few-shot 前缀；评测阶段 \texttt{CoT-FS} 复用同一索引，保证 train/test 在「示例挑选口径」上一致，避免第四章 H9/H10 对照中出现由检索策略不一致引起的假阳性增益。

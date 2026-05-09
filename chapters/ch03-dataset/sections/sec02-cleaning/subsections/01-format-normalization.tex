@@ -1,0 +1,14 @@
+% Subsection 3.2.1: 格式规范化
+
+KodCode 原始 Parquet 在字段类型、缺失标记与嵌套结构上存在多种不一致形态，若直接进入训练与评测会引发静默错误（如 NaN 被序列化为字符串、\texttt{test\_info} 为空但键存在）。本文在 \texttt{convet\_KodCode\_to\_jsonl.py} 中以「非空字符串 + 结构化对象完整性」为统一准绳，完成如下三类规范化：
+
+\paragraph{（1）基础字段非空化}
+对 \texttt{question}、\texttt{solution}、\texttt{test} 三个字符串字段统一调用 \texttt{\_nonempty\_str} 判定，先用 \texttt{pd.isna} 将 Pandas 的 \texttt{NaN} 归一为 Python \texttt{None}，再要求 \texttt{strip()} 后仍非空。任何一项不满足即整条丢弃，避免下游训练阶段出现「空题干」「空解答」等退化样本。
+
+\paragraph{（2）\texttt{test\_info} 结构归一}
+原始 \texttt{test\_info} 可能为 NumPy 数组、Pandas Series 或 Python \texttt{list},元素类型亦不统一。\texttt{\_normalize\_test\_info} 统一将其 \texttt{tolist()} 转为原生 list，并要求：列表非空、首元素为 \texttt{dict}、且该 dict 同时包含 \texttt{function\_declaration}、\texttt{function\_name}、\texttt{parameter\_list} 三个非空字符串字段。这三项是后续生成评测 prompt 时拼接函数签名、以及少样本检索时计算题目相似度的最小必需信息。
+
+\paragraph{（3）JSONL 产出约定}
+所有通过校验的条目按统一字段序 \texttt{(question, solution, test, test\_info)} 写入 JSONL，一条一行，使用 \texttt{ensure\_ascii=False} 保留非 ASCII 字符（例如题面中的全角标点），并保持字段相对顺序稳定，便于 \texttt{grep} 与按偏移量抽样等轻量运维操作。扫描过程每 \texttt{PROGRESS\_EVERY=500} 行记录一次「已扫描 / 已通过 / 缺字段跳过」三元计数，用于事后核对样本损耗来源。
+
+该规范化阶段不改变任何有效样本的内容，仅过滤不合规条目并统一容器类型，为 3.2.2 节的可执行性校验提供纯净的输入。

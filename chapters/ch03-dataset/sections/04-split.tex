@@ -1,0 +1,12 @@
+% Section 3.4: 训练集与评测集划分策略
+
+本文的评测协议要求训练集与评测集在分布、规模与可执行性三个维度均保持严格对照，划分阶段由 \texttt{split\_train\_eval.py} 完成，默认读入 3.3 节产出的 \texttt{KodCode\_annotate.jsonl}，输出 \texttt{data/processed/} 下的训练与评测两个 JSONL。
+
+\paragraph{（1）划分参数}
+默认训练比例 $0.9$、随机种子 \texttt{42}，脚本同时支持 \texttt{--no-shuffle} 以启用「顺序划分」。考虑到 KodCode 原始 Parquet 在上游已经经过主题与难度的大致均衡，本文在 \texttt{scripts/train\_eval.sh} 的一键流程中启用 \texttt{--no-shuffle}，以顺序划分替代随机划分。这样做的好处是：（a）划分结果与原始行号一一对应，便于事后复核与回溯；（b）在重复跑多轮训练时，即使不依赖随机种子也能保证评测集完全一致，避免随种子漂移带来的指标噪声。
+
+\paragraph{（2）规模与通过率}
+最终产出训练集 \texttt{KodCode\_train.jsonl}（约 $33$\,MB）与评测集 \texttt{KodCode\_eval.jsonl}（约 $3.8$\,MB、共 $1000$ 条）。在该评测集上，以原始 \texttt{solution} 与其自带 \texttt{test} 直接配对运行 \texttt{validate\_code\_with\_test}，测得参考解答的 pass@1 为 $0.996$。该数值作为后续所有模型侧实验的「名义上界」——任何训练侧或推理侧配置的 pass@1 若逼近该值即可视为饱和，而与 $1.000$ 的微小差距来自执行非确定性，与数据集质量无关。
+
+\paragraph{（3）划分与实验矩阵的耦合}
+第四章 H1--H10 所有组别共用同一个评测集；训练侧三个变体 \texttt{LoRA\_code}、\texttt{LoRA\_cot\_zs}、\texttt{LoRA\_cot\_fs($k$)} 共用同一个训练集，仅在「是否使用 \texttt{thought\_step}」「是否前置 $k$ 条 few-shot 示例」两个维度上切换。由于训练集与评测集按顺序不相交划分，训练侧永远看不到评测题目本身，这是保证析因设计中「主效应与交互效应可解释」的最低前提。
