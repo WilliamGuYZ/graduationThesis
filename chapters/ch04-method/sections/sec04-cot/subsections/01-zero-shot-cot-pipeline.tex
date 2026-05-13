@@ -34,7 +34,7 @@ Zero-shot CoT（CoT-ZS）对应 H2/H5/H8 三组推理侧。其核心思想是显
 第一阶段只负责产出自然语言推理，不允许直接给出代码：
 \begin{itemize}
     \item \textbf{System}：\texttt{You are an expert algorithm teacher. Generate step-by-step reasoning.}
-    \item \textbf{User}：与 4.2.1 节 Direct Instruction 相同，仅在末尾追加 \texttt{Think step by step, then output the Python code.}（用于统一训练/推理口径）；
+    \item \textbf{User}：采用与 \texttt{LoRA\_cot} 训练相同的 CoT 版题目指令（\texttt{Implement...} 题面 + 末尾 \texttt{Think step by step, then output the Python code.}），\textbf{不是} 4.2.1 节 Direct 模板中的 \texttt{Only output the Python code, no explanation.}，以避免「要求只输出代码」与「本阶段只生成推理」相矛盾；
     \item \textbf{采样参数}：\texttt{MAX\_TOKENS\_REASONING=1024}、\texttt{temperature=0.3}、\texttt{top\_p=0.95}、\texttt{top\_k=50}，与 Direct 一致；
     \item \textbf{输出清洗}：若模型提前滑出 \verb|```python|，立刻截断，只保留前置自然语言段，避免「推理阶段偷跑代码」污染第二阶段的上下文。
 \end{itemize}

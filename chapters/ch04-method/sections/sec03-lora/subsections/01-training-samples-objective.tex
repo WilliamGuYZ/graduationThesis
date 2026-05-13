@@ -21,21 +21,32 @@
 \end{table}
 
 \paragraph{（2）Chat 样本结构}
-每条训练样本一律封装为 OpenAI chat messages 三元组：system 固化角色，user 承载「题目 + 函数签名 + 指令」，assistant 给出监督目标。与基线 Direct 的唯一差别在于 CoT 组的 user instruction 末尾追加 \texttt{Think step by step, then output the Python code.}，以及 assistant 采用固定的「推理段 + $\backslash$n$\backslash$n + \verb|```python ... ```|」格式——两者共同保证训练 prompt 与 4.4 节推理侧第二阶段的上下文分布严格一致。
+\begin{itemize}
+    \item \textbf{消息条数}：\texttt{LoRA\_code} / \texttt{LoRA\_cot\_zs} 为 system + user + assistant 共 3 条；\texttt{LoRA\_cot\_fs($k$)} 为 $2{+}2k{+}2$ 条多轮消息（$k$ 组示范 + 当前题）；
+    \item \textbf{角色分工}：system 固化角色；user 承载题面、函数签名与指令；assistant 承载监督目标；
+    \item \textbf{字面模板}：各档在 \texttt{apply\_chat\_template} 之前的完整骨架见 4.1 节（1a）；
+    \item \textbf{相对 Direct 的 CoT 差异}：user 末尾追加 \texttt{Think step by step, then output the Python code.}；assistant 为「推理段 + 空行 + fenced Python」，与 4.4 节评测侧对 few-shot 示例的回放形态一致。
+\end{itemize}
 
 \paragraph{（3）Loss 掩码策略}
-LoRA 微调只应对 assistant 段求 loss，否则会在 system/user 上消耗容量、干扰指令跟随。本文采用的掩码构造思路如下：
 \begin{itemize}
+    \item \textbf{动机}：loss 只应落在 assistant 段，避免在 system/user 上消耗容量或干扰指令跟随；
     \item \textbf{完整序列}：\texttt{apply\_chat\_template(messages, tokenize=True)} 得到完整 token 序列 $T$；
     \item \textbf{非 assistant 前缀}：\texttt{apply\_chat\_template(messages[:-1], add\_generation\_prompt=True)} 得到截至 assistant 起始标记的前缀 $P$；
     \item \textbf{掩码对齐}：比较 $T$ 与 $P$ 的公共前缀长度 $L$，令 \texttt{labels[:L] = -100}，其余位置保留原 token id；
-    \item \textbf{长度约束}：\texttt{MAX\_LENGTH=1024} 为硬上限，超长样本直接截断（训练阶段只保留能完整容纳 assistant 的样本），避免因截断落在 assistant 中段导致的断句偏差。
+    \item \textbf{长度约束}：\texttt{MAX\_LENGTH=1024} 为硬上限，超长样本直接截断（训练阶段只保留能完整容纳 assistant 的样本），避免因截断落在 assistant 中段导致的断句偏差；
+    \item \textbf{效果与实现收益}：梯度仅对最后一条 assistant 段反向传播；沿用 chat template 对特殊 token 的原生解释，避免手工拼接字符串带来的 tokenizer 不一致。
 \end{itemize}
-该策略只对最后一条 assistant 段反向传播，既保持 chat template 对特殊 token 的原生解释，又避免手工拼字符串带来的 tokenizer 不一致。
 
 \paragraph{（4）Few-shot 训练样本的构造}
-\texttt{LoRA\_cot\_fs(k)} 独有环节：对每条目标样本 $q$，用 3.3.2 节定义的强标签集合派生 \texttt{strong\_tags}，在训练池中按
+\texttt{LoRA\_cot\_fs($k$)} 独有环节：对每条目标样本 $q$，用 3.3.2 节定义的强标签集合派生 \texttt{strong\_tags}，在训练池中按下式评分：
 \[
 \text{score}(q, q') = 2\cdot |\mathrm{strong\_tags}(q) \cap \mathrm{strong\_tags}(q')| + |\mathrm{tags}(q) \cap \mathrm{tags}(q')|
 \]
-评分候选，取得分最高的前 $\max(k, 4k)$ 条作为候选池，再用 \texttt{random.sample} 从中随机抽取 $k$ 条拼在 user 段之前，构成 \texttt{(题目, 推理, 代码)} 形式的示例序列。该构造与 4.4.2 节评测侧的检索函数共享同一评分与同一强标签集合，仅在随机性来源上存在差异（训练侧 \texttt{random.sample}，评测侧用 \texttt{seed = 2026 + problem\_idx * 1000 + sample\_idx} 做可复现抽样），以此保证 train/test 上下文统计一致而评测仍可稳定复现。
+\begin{itemize}
+    \item \textbf{候选池}：取得分最高的前 $\max(k, 4k)$ 条；
+    \item \textbf{抽样}：\texttt{random.sample} 从中抽 $k$ 条，以 User$\rightarrow$Assistant 轮次插在目标题之前，形成 \texttt{(题目, 推理, 代码)} 示范序列；
+    \item \textbf{与评测对齐}：与 4.4.2 节评测侧检索共享同一评分与强标签集合；
+    \item \textbf{随机性差异}：训练为全局 RNG；评测为 \texttt{seed = 2026 + problem\_idx * 1000 + sample\_idx}，保证可复现；
+    \item \textbf{目的}：train/test 在上下文统计上对齐，同时评测结果可被第三方复核。
+\end{itemize}
