@@ -1,12 +1,9 @@
 % Section 3.4: 训练集与评测集划分策略
 
-本节将 3.3 节产出的 \texttt{KodCode\_annotate.jsonl} 划分为训练集与评测集，以服务于第四章训练侧 $\times$ 推理侧的二因素析因对照。划分需在分布、规模与可执行性三个维度均保持严格一致，由 \texttt{split\_train\_eval.py} 完成。
+由 \texttt{split\_train\_eval.py} 将 3.3 节产出的 \texttt{KodCode\_annotate.jsonl} 顺序划分为 9{:}1，得到训练集 \texttt{KodCode\_train.jsonl}（约 $33$\,MB、$\approx$9000 条）与评测集 \texttt{KodCode\_eval.jsonl}（约 $3.8$\,MB、$1000$ 条）。
 
-\paragraph{（1）划分参数}
-脚本默认训练比例 $0.9$、随机种子 \texttt{42}，同时支持 \texttt{--no-shuffle} 启用顺序划分。本文在 \texttt{scripts/train\_eval.sh} 一键流程中启用 \texttt{--no-shuffle} 替代随机划分，理由有二：其一，样本与原始行号一一对应，便于事后复核与回溯；其二，多轮训练即使不依赖随机种子也能保证评测集完全一致，避免种子漂移带来的指标噪声。
-
-\paragraph{（2）规模与名义上界}
-最终产出训练集 \texttt{KodCode\_train.jsonl}（约 $33$\,MB）与评测集 \texttt{KodCode\_eval.jsonl}（约 $3.8$\,MB、共 $1000$ 条）。在评测集上以原始 \texttt{solution} 配其自带 \texttt{test} 运行 \texttt{validate\_code\_with\_test}，参考解答 pass@1 实测为 $0.996$，作为后续所有模型侧实验的名义上界——任何训练/推理配置若逼近该值即可视为饱和，与 $1.000$ 的微小差距来自执行非确定性（浮点精度、系统时钟等）而非数据质量。
-
-\paragraph{（3）与实验矩阵的耦合}
-第四章 H1--H10 全部组别共用同一评测集；训练侧三个变体 \texttt{LoRA\_code}、\texttt{LoRA\_cot\_zs}、\texttt{LoRA\_cot\_fs($k$)} 共用同一训练集，仅在「是否使用 \texttt{thought\_step}」「是否前置 $k$ 条 few-shot 示例」两个维度上切换。由于训练集与评测集按顺序不相交划分，训练侧永远看不到评测题目本身，这是析因设计中主效应与交互效应可解释的最低前提。
+\begin{itemize}
+    \item \textbf{顺序划分（\texttt{--no-shuffle}）}：样本与原始行号一一对应，便于事后回溯，并保证多轮训练的评测集严格一致；
+    \item \textbf{名义上界}：在评测集上以原始 \texttt{solution} 配其 \texttt{test} 跑 \texttt{validate\_code\_with\_test}，参考解答 pass@$1$ 实测为 $0.996$，作为后续模型侧实验的名义上界；
+    \item \textbf{与实验矩阵的耦合}：H1--H10 共用同一评测集；训练侧 \texttt{LoRA\_code} / \texttt{LoRA\_cot\_zs} / \texttt{LoRA\_cot\_fs($k$)} 共用同一训练集，仅在「是否使用 \texttt{thought\_step}」「是否前置 $k$ 条 few-shot」两个维度切换。训练集与评测集顺序不相交，是析因主效应与交互效应可解释的最低前提。
+\end{itemize}

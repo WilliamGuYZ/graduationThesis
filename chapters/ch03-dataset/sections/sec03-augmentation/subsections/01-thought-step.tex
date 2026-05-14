@@ -1,18 +1,8 @@
 % Subsection 3.3.1: 思维步骤标注
 
-思维步骤（\texttt{thought\_step}）是 CoT 监督与 CoT 推理两条路径的共同信号。为使其在不同训练侧（\texttt{LoRA\_cot\_zs}、\texttt{LoRA\_cot\_fs}）与推理侧（\texttt{CoT-ZS}、\texttt{CoT-FS}）配置下具备可比性，本文由 \texttt{annotate\_thought\_steps.py} 调用教师模型 \texttt{deepseek-chat} 统一离线生成，具体协议如下。
+\texttt{thought\_step} 是 CoT 监督与 CoT 推理两条路径的共同信号，由 \texttt{annotate\_thought\_steps.py} 调用教师模型 \texttt{deepseek-chat} 离线生成。教师模型同时看到题目与参考解答，仅被要求产出「从题目自然导向该解答」的推理，避免把教师自身的解题误差传导到学生模型的监督信号中。
 
-\paragraph{（1）监督信号的生成定位}
-教师模型同时看到题目与参考解答，仅被要求产出「从题目自然导向该解答」的推理，而非重新求解。这样可规避教师自身解题能力波动，保证 \texttt{thought\_step} 与 \texttt{solution} 严格一致，同时避免把教师的错误传导到学生模型的监督信号中。
-
-\paragraph{（2）Prompt 与格式约束}
-Prompt 要求输出 3$\sim$5 条带封闭标签的编号步骤，标签取自 \{Understand, Approach, Edge Cases, Implement, Verify\}，单条格式固定为 \texttt{Step N: [Tag] - explanation}，并明确「只输出步骤、不得复述代码」。封闭标签集一方面强迫教师覆盖「理解题意—拟定算法—处理边界—实现—自检」中的关键子集，另一方面使后续抽检可以按标签分布做结构化统计。\texttt{MAX\_THOUGHT\_TOKENS=512}、\texttt{temperature=0.3} 在长度与稳定性之间折中，避免步骤过长淹没解答或过度随机。
-
-\paragraph{（3）工程鲁棒性}
-32 路线程并发调用 API，每条请求最多重试 3 次（HTTP 429 用 15 秒定长回退、其余走指数退避）；输出按追加方式写入并按 \texttt{question} 建立已完成集合，支持断点续标；最终失败的样本仅写入空 \texttt{thought\_step} 并计入失败计数，不阻断整体流程。
-
-\paragraph{（4）标注实例}
-图~\ref{fig:ch3-thought-example} 展示与图~\ref{fig:ch3-sample} 同一题目的完整 \texttt{thought\_step}：五条步骤覆盖封闭标签全集，且 \texttt{[Verify]} 步主动指出了题面与参考解答之间的语义偏差——这种可追溯、可审计的结构正是本文选择离线标注而非推理时即席生成的主要动因。
+输出格式固定为 3$\sim$5 条带封闭标签的编号步骤：\texttt{Step N: [Tag] - explanation}，标签取自 \{Understand, Approach, Edge Cases, Implement, Verify\}，强制覆盖「理解题意—拟定算法—处理边界—实现—自检」关键子集。图~\ref{fig:ch3-thought-example} 展示与图~\ref{fig:ch3-sample} 同一题目的完整标注示例。
 
 \begin{figure}[!htb]
 \begin{footnotesize}

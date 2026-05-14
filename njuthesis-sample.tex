@@ -152,14 +152,15 @@
 \chapter{Prompt 模板字面全文}
 \label{appendix:prompts}
 
-本附录给出第四章三类训练侧与三类推理侧 Prompt 的逐字模板，便于第三方按本文协议复现 H1--H10 的实验结果。占位符 \texttt{\{func\}}、\texttt{\{params\}}、\texttt{\{question\}}、\texttt{\{thought\}}、\texttt{\{code\}} 的来源与第四章 4.1 节（1a）一致。
+本附录给出 H1--H10 实验所用 Prompt 的逐字模板，便于第三方按本文协议复现。A.1 列出训练侧三种 LoRA 适配器（\texttt{Base} 不训练）的 Chat 模板，A.2 列出推理侧三种 Prompt 结构。占位符约定：\texttt{\{func\}}、\texttt{\{params\}}、\texttt{\{question\}} 来自 \texttt{test\_info[0]} 与题面，\texttt{\{thought\}}、\texttt{\{code\}} 对应 \texttt{thought\_step}、\texttt{solution}。
 
-\section{LoRA 训练侧 Chat 模板}
+\section{训练侧 Chat 模板}
+\label{appendix:prompts:train}
 
-\paragraph{LoRA\_code（H4 训练）}
-单条样本为 system + user + assistant 共 3 条，user/system 与 Direct 推理逐字同构；assistant 为可执行 Python 正文（\textbf{无} Markdown 围栏）。Loss 仅落在 assistant 段。
+\subsection{\texttt{LoRA\_code}}
+单条样本为 system + user + assistant 共 3 条，system / user 与 A.2.1 \texttt{Direct} 逐字同构；assistant 为可执行 Python 正文（\textbf{无} Markdown 围栏）。Loss 仅落 assistant 段。
 
-\paragraph{LoRA\_cot\_zs（H7 / H8 训练）}
+\subsection{\texttt{LoRA\_cot\_zs}}
 \begin{itemize}
     \item \textbf{System}：
 \begin{quote}\ttfamily\footnotesize
@@ -167,15 +168,17 @@ You are an expert Python programmer. Before writing code, think through\\
 the problem step by step. Format your response as numbered reasoning\\
 steps followed by the Python solution.
 \end{quote}
-    \item \textbf{User}：与 CoT-ZS Stage-1 相同；
-    \item \textbf{Assistant}：\texttt{\{thought\}} + 空行 + \verb|```python|\,\texttt{\{code\}}\,\verb|```|。
+    \item \textbf{User}：与 A.2.2 \texttt{CoT-ZS} Stage-1 相同；
+    \item \textbf{Assistant}：\texttt{\{thought\}} + 空行 + \verb|```python|\,\texttt{\{code\}}\,\verb|```|。Loss 仅落 assistant 段。
 \end{itemize}
 
-\paragraph{LoRA\_cot\_fs($k$)（H9 / H10 训练）}
-在 \texttt{LoRA\_cot\_zs} 的 system 之后拼接 $k$ 组示范（与推理侧 CoT-FS 中 user/assistant 字面同构），再接当前题 user 与 assistant；前 $k$ 组示例 labels 全部为 \texttt{-100}，loss 仅落在当前题 assistant 段。
+\subsection{\texttt{LoRA\_cot\_fs($k$)}}
+在 \texttt{LoRA\_cot\_zs} 的 system 之后拼接 $k$ 组示范（与 A.2.3 \texttt{CoT-FS} 中 user / assistant 字面同构），再接当前题 user 与 assistant。前 $k$ 组示例 labels 全部为 \texttt{-100}，loss 仅落当前题 assistant 段。
 
-\section{Direct 推理侧（H1 / H4 / H7 / H9）}
-单阶段、一次 \texttt{generate}，对应 \texttt{evaluation/eval\_base\_passk.py} 与 \texttt{eval\_lora\_passk.py}。
+\section{推理侧 Prompt 模板}
+\label{appendix:prompts:infer}
+
+\subsection{\texttt{Direct}}
 \begin{itemize}
     \item \textbf{System}：
 \begin{quote}\ttfamily\footnotesize
@@ -189,8 +192,7 @@ Only output the Python code, no explanation.
 \end{quote}
 \end{itemize}
 
-\section{CoT-ZS 推理侧（H2 / H5 / H8）}
-两阶段、两次 \texttt{generate}，对应 \texttt{evaluation/eval\_lora\_cot\_passk.py --few-shot-k 0}。
+\subsection{\texttt{CoT-ZS}}
 
 \paragraph{Stage-1（推理生成）}
 \begin{itemize}
@@ -207,7 +209,7 @@ Think step by step, then output the Python code.
 \end{itemize}
 
 \paragraph{Stage-2（代码生成）}
-Stage-1 输出经 \texttt{MAX\_REASONING\_CHARS=1200} 与 \texttt{MAX\_REASONING\_PROMPT\_TOKENS=256} 二级截断后写入 Stage-2 上下文：
+Stage-1 输出经二级截断后写入 Stage-2 上下文：
 \begin{itemize}
     \item \textbf{System}：
 \begin{quote}\ttfamily\footnotesize
@@ -223,8 +225,8 @@ Write only the Python code in \verb|```python| block.
 \end{quote}
 \end{itemize}
 
-\section{CoT-FS($k$) 推理侧（H3 / H6 / H10）}
-在 CoT-ZS 两阶段 system 各自之后插入 $k$ 组示例，再接目标题；两阶段共享同一 $k$ 组、相同顺序。每组示例形如：
+\subsection{\texttt{CoT-FS($k$)}}
+在 A.2.2 两阶段 system 各自之后插入 $k$ 组示例，再接目标题；两阶段共享\textbf{同一 $k$ 组、相同顺序}。每组示例形如：
 \begin{itemize}
     \item \textbf{User（示例题，CoT 版指令）}：
 \begin{quote}\ttfamily\footnotesize

@@ -31,7 +31,7 @@ Zero-shot CoT（CoT-ZS）对应 H2/H5/H8 三组推理侧。其核心思想是显
 \end{figure}
 
 \paragraph{（1）Stage-1：推理生成}
-第一阶段只负责产出自然语言推理，不允许直接给出代码：System 为「\texttt{expert algorithm teacher. Generate step-by-step reasoning.}」；User 采用与 \texttt{LoRA\_cot} 训练相同的 CoT 版题目指令（题面 + 末尾 \texttt{Think step by step, then output the Python code.}），\textbf{不是} 4.2.1 节 Direct 模板中的 \texttt{Only output the Python code, no explanation.}，以避免「要求只输出代码」与「本阶段只生成推理」相矛盾；采样参数 \texttt{MAX\_TOKENS\_REASONING=1024}、\texttt{temperature=0.3}、\texttt{top\_p=0.95}、\texttt{top\_k=50}，与 Direct 一致。输出清洗：若模型提前滑出任意三反引号代码块（\verb|```python|、\verb|```bash| 等任意语言标记或无标记围栏），立刻截断只保留前置自然语言段，避免「推理阶段偷跑代码」污染第二阶段上下文。逐字模板见附录~\ref{appendix:prompts}~A.3。
+第一阶段只负责产出自然语言推理，不允许直接给出代码：System 为「\texttt{expert algorithm teacher. Generate step-by-step reasoning.}」；User 采用与 \texttt{LoRA\_cot} 训练相同的 CoT 版题目指令（题面 + 末尾 \texttt{Think step by step, then output the Python code.}），\textbf{不是} 4.2.1 节 Direct 模板中的 \texttt{Only output the Python code, no explanation.}，以避免「要求只输出代码」与「本阶段只生成推理」相矛盾；采样参数 \texttt{MAX\_TOKENS\_REASONING=1024}、\texttt{temperature=0.3}、\texttt{top\_p=0.95}、\texttt{top\_k=50}，与 Direct 一致。输出清洗：若模型提前滑出任意三反引号代码块（\verb|```python|、\verb|```bash| 等任意语言标记或无标记围栏），立刻截断只保留前置自然语言段，避免「推理阶段偷跑代码」污染第二阶段上下文。逐字模板见附录~\ref{appendix:prompts}~A.2.2。
 
 \paragraph{（2）推理段的长度预算}
 第一阶段输出不能无限拼进第二阶段，否则会压缩 Stage-2 的生成预算、并在 CoT-FS 模式下挤出示例内容。为此引入两级截断：
@@ -42,7 +42,7 @@ Zero-shot CoT（CoT-ZS）对应 H2/H5/H8 三组推理侧。其核心思想是显
 \end{itemize}
 
 \paragraph{（3）Stage-2：代码生成}
-第二阶段接收 \{题目, 截断后的推理\} 作为 chat 上下文，要求输出可直接执行的代码：System 为「\texttt{expert Python programmer. Based on the reasoning, write the code.}」；Assistant 期望格式固定「推理文字 + 空行 + \verb|```python ... ```|」，与训练阶段 assistant 回复格式严格一致；采样参数 \texttt{MAX\_TOKENS\_CODE=1024}、其余与 Stage-1 相同。代码抽取：\texttt{eval\_lora\_cot\_passk.py} 中取\textbf{最后一个} \verb|```python| 块（若无则取最后一个无语言围栏块，再退回全文），以便在模型输出多段围栏时仍以最终代码块为准；此逻辑与 4.2.2 节 Direct 路径「取首段围栏」不同，两份 \texttt{extract\_code} 实现仅在 \texttt{[0]} / \texttt{[-1]} 上有差异。逐字 Stage-2 综合 User 模板见附录~\ref{appendix:prompts}~A.3。
+第二阶段接收 \{题目, 截断后的推理\} 作为 chat 上下文，要求输出可直接执行的代码：System 为「\texttt{expert Python programmer. Based on the reasoning, write the code.}」；Assistant 期望格式固定「推理文字 + 空行 + \verb|```python ... ```|」，与训练阶段 assistant 回复格式严格一致；采样参数 \texttt{MAX\_TOKENS\_CODE=1024}、其余与 Stage-1 相同。代码抽取：\texttt{eval\_lora\_cot\_passk.py} 中取\textbf{最后一个} \verb|```python| 块（若无则取最后一个无语言围栏块，再退回全文），以便在模型输出多段围栏时仍以最终代码块为准；此逻辑与 4.2.2 节 Direct 路径「取首段围栏」不同，两份 \texttt{extract\_code} 实现仅在 \texttt{[0]} / \texttt{[-1]} 上有差异。逐字 Stage-2 综合 User 模板见附录~\ref{appendix:prompts}~A.2.2。
 
 \paragraph{（4）端到端评测入口}
 CoT-ZS 的完整评测由 \texttt{evaluation/eval\_lora\_cot\_passk.py} 在 \texttt{--few-shot-k 0} 下启动；数据加载、子进程隔离执行、pass@k 无偏估计与 4.2.2 节\textbf{口径}一致，但\textbf{代码抽取规则}见 4.4.1（3）末条（取末段围栏）。实现上将「一次生成 $N{\times}10$ 份结果」拆成「先批量生成 reasoning、再批量生成 code」两次 \texttt{llm.generate} 调用，以匹配两阶段流水线。
