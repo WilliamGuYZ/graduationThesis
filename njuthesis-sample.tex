@@ -32,7 +32,7 @@
     % degree = academic|professional,        % 学位类型，默认为学术型
     %
     % nl-cover,   % 是否需要国家图书馆封面，默认关闭
-    % decl-page,  % 是否需要诚信承诺书或原创性声明，默认关闭
+    decl-page,  % 是否需要诚信承诺书或原创性声明，默认关闭
     %
     %   页面模式，详见手册说明
     % draft,                  % 开启草稿模式
@@ -44,8 +44,7 @@
     % twoside,                % 双面模式，每一章从奇数页开始
     %
     %   字体设置，不填写则自动调用系统预装字体，详见手册
-    % fontset = win, % |mac|macoffice|fandol|none,
-    decl-page,     % 启用本科原创性声明 / 诚信承诺书页
+    % fontset = win % |mac|macoffice|fandol|none,
   ]{njuthesis}
 
 % 模板选项设置，包括个人信息、外观样式等
@@ -100,9 +99,9 @@
 % 生成目录
 \tableofcontents
 % 生成图片清单
-\listoffigures
+% \listoffigures
 % 生成表格清单
-\listoftables
+% \listoftables
 
 %---------------------------------------------------------------------
 %	正文部分
@@ -110,28 +109,13 @@
 \mainmatter
 
 % 符号表
-\begin{notation}[10cm]
-  \item[LLM] 大语言模型 (Large Language Model)
-  \item[PEFT] 参数高效微调 (Parameter-Efficient Fine-Tuning)
-  \item[LoRA] 低秩适配 (Low-Rank Adaptation)
-  \item[CoT] 思维链 (Chain-of-Thought)
-  \item[ICL] 上下文学习 (In-Context Learning)
-  \item[SFT] 有监督微调 (Supervised Fine-Tuning)
-  \item[Direct] 单阶段直接生成的提示结构（题目 $\rightarrow$ 代码）
-  \item[CoT-ZS] 零样本两阶段思维链推理（Zero-shot CoT）
-  \item[CoT-FS($k$)] 含 $k$ 条示例的少样本两阶段思维链推理（Few-shot CoT）
-  \item[Base] 不加 LoRA 的原始基座（CodeGeeX4-ALL-9B）
-  \item[LoRA\_code] 仅监督 \texttt{solution} 的纯代码 LoRA 适配器
-  \item[LoRA\_cot\_zs] 监督 \texttt{thought\_step + solution} 且训练侧无示例的 CoT LoRA 适配器
-  \item[LoRA\_cot\_fs($k$)] 同上，但训练侧含 $k$ 条 few-shot 示例
-  \item[H1--H10] 训练侧 $\times$ 推理侧二因素析因设计下的十组有效实验
-  \item[pass@$k$] 每题采样 $N$ 次中至少一次通过单测的题目占比的无偏估计
-  \item[$r$] LoRA 低秩分解秩，本文取 32
-  \item[$\alpha$] LoRA 缩放系数，本文取 64
-  \item[$k$] Few-shot 示例条数，本文固定 $k{=}2$
-  \item[$N$] 每题采样数，本文取 10，支撑 pass@1/5/10 估计
-  \item[DiD] 差分差分量 (Difference-in-Differences)，用于检验交互效应
-\end{notation}
+% 语法与 description 环境一致
+% 两个可选参数依次为说明区域宽度、符号区域宽度
+% 带星号的符号表(notation*)不会插入目录
+% \begin{notation}[10cm]
+%   \item[DFT] 密度泛函理论 (Density functional theory)
+%   \item[DMRG] 密度矩阵重正化群 (Density-Matrix Reformation-Group)
+% \end{notation}
 
 % 正文写作建议：
 %   1. 主文件仅负责章节总控（按顺序 \input 各 chapter）
@@ -270,7 +254,6 @@ Think step by step, then output the Python code.
 %---------------------------------------------------------------------
 
 \begin{acknowledgement}
-todo
 \end{acknowledgement}
 
 % 完工
