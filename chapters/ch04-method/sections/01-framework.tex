@@ -29,7 +29,7 @@
     \begin{itemize}
         \item 不更新 LoRA，无训练 messages；评测加载 \texttt{models/CodeGeeX4-ALL-9B/}。
     \end{itemize}
-  \item[\texttt{LoRA\_code}] 一轮目标对话（无 few-shot）：System 与 Direct 推理逐字同构，User 末尾追加「Only output the Python code, no explanation.」，Assistant 为不带 Markdown 围栏的可执行 Python 正文（与 \texttt{solution} 一致），loss 仅落最后一轮 Assistant；字面模板见附录~\ref{appendix:prompts}~A.4。
+  \item[\texttt{LoRA\_code}] 一轮目标对话（无 few-shot）：System 与 Direct 推理逐字同构，User 末尾追加「Only output the Python code, no explanation.」，Assistant 为不带 Markdown 围栏的可执行 Python 正文（与 \texttt{solution} 一致），loss 仅落最后一轮 Assistant；字面模板见附录~\ref{appendix:prompts}~A.1。
   \item[\texttt{LoRA\_cot\_zs}] 一轮目标对话（$k{=}0$）：System 强调「先推理后编码」（\texttt{numbered reasoning steps followed by the Python solution}），User 末尾追加「Think step by step, then output the Python code.」，Assistant 为「\texttt{thought\_step} + 空行 + 围栏 Python 代码块」（无 \texttt{thought} 时退化为仅代码块），loss 仅落最后一轮 Assistant；字面模板同上。
   \item[\texttt{LoRA\_cot\_fs($k$)}] 在 \texttt{LoRA\_cot\_zs} 的 System 下拼接 $k$ 组「\textbf{User}（示例题，CoT 版指令）$\rightarrow$ \textbf{Assistant}（示例 \texttt{thought+code}）」示范，再接当前题 User 与 Assistant；前 $k$ 组示范 labels 全部为 \texttt{-100}，loss 仅落当前题 Assistant；与 \texttt{build\_few\_shot\_messages} 一致。
 \end{description}
@@ -50,7 +50,7 @@
         \item \textbf{Few-shot}：$k{>}0$ 时，两阶段使用\textbf{同一组} $k$ 条示例；评分与训练侧一致，抽样种子 \texttt{2026 + problem\_idx*1000 + sample\_idx}；
         \item \textbf{Stage-1}（只生成自然语言推理）：System 为「algorithm teacher. Generate step-by-step reasoning.」；若 $k{>}0$ 在 system 之后插入 $k$ 组示范，再接目标题 CoT 版 User（与训练 \texttt{LoRA\_cot} 同）；若输出中出现任意三反引号代码块（\verb|```python|、\verb|```bash| 等任意语言标记或无标记围栏），截断其后，避免推理段「偷跑」代码。
         \item \textbf{Stage-2}（在固定推理条件下生成代码）：System 为「expert Python programmer. Based on the reasoning, write the code.」；若 $k{>}0$ 再次回放与 Stage-1 \textbf{相同顺序}的 $k$ 组 User $\rightarrow$ Assistant；目标综合 User 写入「\texttt{Reasoning:} + 截断后 Stage-1 文本 + 重复函数签名与题面 + 末尾限定 fenced Python」。
-        \item \textbf{字面模板}：上述 Stage-1 / Stage-2 与 CoT-FS 示例骨架的逐字模板见附录~\ref{appendix:prompts}~A.2、A.3。
+        \item \textbf{字面模板}：上述 Stage-1 / Stage-2 与 CoT-FS 示例骨架的逐字模板见附录~\ref{appendix:prompts}~A.3、A.4。
     \end{itemize}
     \item \textbf{与 H1--H10 的读法对照}
     \begin{itemize}

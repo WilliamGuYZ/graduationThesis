@@ -170,6 +170,26 @@
 
 本附录给出第四章三类训练侧与三类推理侧 Prompt 的逐字模板，便于第三方按本文协议复现 H1--H10 的实验结果。占位符 \texttt{\{func\}}、\texttt{\{params\}}、\texttt{\{question\}}、\texttt{\{thought\}}、\texttt{\{code\}} 的来源与第四章 4.1 节（1a）一致。
 
+\section{LoRA 训练侧 Chat 模板}
+
+\paragraph{LoRA\_code（H4 训练）}
+单条样本为 system + user + assistant 共 3 条，user/system 与 Direct 推理逐字同构；assistant 为可执行 Python 正文（\textbf{无} Markdown 围栏）。Loss 仅落在 assistant 段。
+
+\paragraph{LoRA\_cot\_zs（H7 / H8 训练）}
+\begin{itemize}
+    \item \textbf{System}：
+\begin{quote}\ttfamily\footnotesize
+You are an expert Python programmer. Before writing code, think through\\
+the problem step by step. Format your response as numbered reasoning\\
+steps followed by the Python solution.
+\end{quote}
+    \item \textbf{User}：与 CoT-ZS Stage-1 相同；
+    \item \textbf{Assistant}：\texttt{\{thought\}} + 空行 + \verb|```python|\,\texttt{\{code\}}\,\verb|```|。
+\end{itemize}
+
+\paragraph{LoRA\_cot\_fs($k$)（H9 / H10 训练）}
+在 \texttt{LoRA\_cot\_zs} 的 system 之后拼接 $k$ 组示范（与推理侧 CoT-FS 中 user/assistant 字面同构），再接当前题 user 与 assistant；前 $k$ 组示例 labels 全部为 \texttt{-100}，loss 仅落在当前题 assistant 段。
+
 \section{Direct 推理侧（H1 / H4 / H7 / H9）}
 单阶段、一次 \texttt{generate}，对应 \texttt{evaluation/eval\_base\_passk.py} 与 \texttt{eval\_lora\_passk.py}。
 \begin{itemize}
@@ -237,131 +257,6 @@ Think step by step, then output the Python code.
 \end{quote}
 \end{itemize}
 示例选择：按 $\mathrm{score}(q, q') = 2 \cdot |\mathrm{strong\_tags}(q) \cap \mathrm{strong\_tags}(q')| + |\mathrm{tags}(q) \cap \mathrm{tags}(q')|$ 评分取 top $\max(k, 4k)$，再以 \texttt{seed = 2026 + problem\_idx \(\times\) 1000 + sample\_idx} 抽样 $k$ 条。
-
-\section{LoRA 训练侧 Chat 模板}
-
-\paragraph{LoRA\_code（H4 训练）}
-单条样本为 system + user + assistant 共 3 条，user/system 与 Direct 推理逐字同构；assistant 为可执行 Python 正文（\textbf{无} Markdown 围栏）。Loss 仅落在 assistant 段。
-
-\paragraph{LoRA\_cot\_zs（H7 / H8 训练）}
-\begin{itemize}
-    \item \textbf{System}：
-\begin{quote}\ttfamily\footnotesize
-You are an expert Python programmer. Before writing code, think through\\
-the problem step by step. Format your response as numbered reasoning\\
-steps followed by the Python solution.
-\end{quote}
-    \item \textbf{User}：与 CoT-ZS Stage-1 相同；
-    \item \textbf{Assistant}：\texttt{\{thought\}} + 空行 + \verb|```python|\,\texttt{\{code\}}\,\verb|```|。
-\end{itemize}
-
-\paragraph{LoRA\_cot\_fs($k$)（H9 / H10 训练）}
-在 \texttt{LoRA\_cot\_zs} 的 system 之后拼接 $k$ 组示范（与推理侧 CoT-FS 中 user/assistant 字面同构），再接当前题 user 与 assistant；前 $k$ 组示例 labels 全部为 \texttt{-100}，loss 仅落在当前题 assistant 段。
-
-\chapter{典型样本失效对照}
-\label{appendix:cases}
-
-本附录给出第 5.3.3 节失效模式归因所引用的典型样本对照详情，每例包含原题、被测函数签名、单测代码、模型输出摘录与失败类别判定。题目 id 与摘录均来自 \texttt{evaluation/results/} 下评测 JSON 的 \texttt{problem\_idx} 与 \texttt{generations} 字段。
-
-\section{样本 A：算法范式明确的单步问题}
-\paragraph{选题动机}用以验证「不难的题目不被方法差异放大」，预期 H1 / H4 / H8 / H10 通过率均接近 1。
-% TODO: 补充题目 id（如 \texttt{KodCode\_xxx}）、原题摘录（含函数签名 \{func\}/\{params\}）、单测代码、四组模型输出与是否通过。
-
-\section{样本 B：需要分步推理的复杂搜索/DP 问题}
-\paragraph{选题动机}支撑 5.3.2 节「LoRA $\times$ CoT 正协同」结论，预期 H1 在 Runtime / Timeout 类失败上显著高于 H8 / H10。
-% TODO: 补充题目 id、原题摘录、单测、四组输出与失败类别（Logic / Structural / Runtime / Timeout）。
-
-\section{样本 C：函数签名与常规直觉不一致的题目}
-\paragraph{选题动机}支撑 5.3.1 节关于稳定性的论述，预期 H1 高发 Structural 错误，LoRA 类方法显著降低签名漂移率。
-% TODO: 补充题目 id、签名差异点、四组输出对比。
-
-\section{反例：CoT 推理段失效模式}
-对应 5.3.3 节（3）「CoT 推理段的典型失效」三类：
-\paragraph{反例 D：推理偷跑代码}
-% TODO: 摘录一例 Stage-1 输出含 \texttt{```python} 块的原始文本，配 4.4.1 节清洗规则前后对照。
-\paragraph{反例 E：推理过长触发截断}
-% TODO: 摘录一例 Stage-1 长度超过 \texttt{MAX\_REASONING\_CHARS=1200} 的样本，给出截断前后差异。
-\paragraph{反例 F：推理与代码不一致}
-% TODO: 摘录一例 Stage-1 给出 A 算法、Stage-2 实现 B 算法的样本，配执行结果。
-
-\chapter{评测脚本关键代码段}
-\label{appendix:codes}
-
-本附录摘录第 4 章流程中三段独立可读的核心实现，便于读者按字面复现评测口径。完整脚本见 \texttt{ati-codegen/evaluation/}。
-
-\section{pass@k 无偏估计}
-对应 \cite{chen2021evaluating} 提出的无偏估计，三份评测脚本（\texttt{eval\_base\_passk.py} / \texttt{eval\_lora\_passk.py} / \texttt{eval\_lora\_cot\_passk.py}）实现完全一致：
-\begin{quote}\ttfamily\footnotesize
-def pass\_at\_k(n: int, c: int, k: int) -> float:\\
-\hspace*{2em}if n < k:\\
-\hspace*{4em}return float("nan")\\
-\hspace*{2em}if n - c < k:\\
-\hspace*{4em}return 1.0\\
-\hspace*{2em}return 1.0 - comb(n - c, k) / comb(n, k)
-\end{quote}
-其中 $n$ 为单题采样数（本文取 \texttt{NUM\_SAMPLES=10}），$c$ 为通过数；公式等价于 $1 - \binom{n-c}{k} / \binom{n}{k}$。
-
-\section{代码抽取（Direct 取首段、CoT 取末段）}
-4.2.2 节 Direct 路径与 4.4.1 节 CoT 路径的代码抽取规则在脚本中以两份 \texttt{extract\_code} 实现，差异仅在 \texttt{[0]} 与 \texttt{[-1]}：
-\begin{quote}\ttfamily\footnotesize
-\# eval\_base\_passk.py / eval\_lora\_passk.py（首段，Direct）\\
-def extract\_code(text: str) -> str:\\
-\hspace*{2em}code\_blocks = re.findall(r"```python(.*?)```", text, re.S)\\
-\hspace*{2em}if not code\_blocks:\\
-\hspace*{4em}code\_blocks = re.findall(r"```(.*?)```", text, re.S)\\
-\hspace*{2em}if code\_blocks:\\
-\hspace*{4em}return code\_blocks[0].strip()\\
-\hspace*{2em}return text.strip()\\[0.4em]
-\# eval\_lora\_cot\_passk.py（末段，CoT-FS 时绕开 few-shot 回放）\\
-def extract\_code(text: str) -> str:\\
-\hspace*{2em}\dots\\
-\hspace*{2em}return code\_blocks[-1].strip()
-\end{quote}
-
-\section{Stage-1 输出截断}
-对应 4.4.1 节（1）「避免推理阶段偷跑代码污染第二阶段上下文」：
-\begin{quote}\ttfamily\footnotesize
-def \_clip\_reasoning\_before\_code(text: str) -> str:\\
-\hspace*{2em}idx\_py  = text.find("```python")\\
-\hspace*{2em}idx\_any = text.find("```")\\
-\hspace*{2em}cut\_idx = min(i for i in [idx\_py, idx\_any] if i >= 0) \\
-\hspace*{4em}if (idx\_py >= 0 or idx\_any >= 0) else -1\\
-\hspace*{2em}if cut\_idx >= 0:\\
-\hspace*{4em}return text[:cut\_idx].rstrip()\\
-\hspace*{2em}return text.strip()
-\end{quote}
-此处取 \texttt{```python} 与 \texttt{```} 两个起始位置中的较小者，意味着任意三反引号围栏（含 \texttt{```bash} 等其他语言标记或无标记块）均会触发截断，与 4.4.1 节（1）「输出清洗」一致。
-
-\chapter{H1--H10 命令行完整对照}
-\label{appendix:cmds}
-
-本附录将 \texttt{scripts/train\_eval.sh} 中各 \texttt{RUN\_H*} 块逐组展开为论文化命令行表，便于第三方按 \texttt{result-suffix} 与本文表~\ref{tab:ch4-matrix} 对应。统一约定 \texttt{FS\_K=2}，所有命令在仓库根目录下执行。
-
-\begin{table}[!htb]
-  \centering
-  \caption{H1--H10 评测命令行与结果文件命名}
-  \label{tab:appendix-cmds}
-  \footnotesize
-  \setlength{\tabcolsep}{3pt}
-  \begin{tabular}{cp{8.5cm}l}
-    \toprule
-    编号 & 命令行（在 \texttt{ati-codegen/} 下执行） & 结果 JSON \\
-    \midrule
-    H1  & \texttt{python3 evaluation/eval\_base\_passk.py --result-suffix h1\_base\_direct} & \texttt{eval\_base\_passk\_h1\_base\_direct.json} \\
-    H2  & \texttt{python3 evaluation/eval\_lora\_cot\_passk.py --lora-path NONE --few-shot-k 0 --result-suffix h2\_base\_cot\_zs} & \texttt{eval\_lora\_cot\_passk\_h2\_base\_cot\_zs.json} \\
-    H3  & \texttt{python3 evaluation/eval\_lora\_cot\_passk.py --lora-path NONE --few-shot-k 2 --result-suffix h3\_base\_cot\_fs2} & \texttt{eval\_lora\_cot\_passk\_h3\_base\_cot\_fs2.json} \\
-    H4  & \texttt{python3 evaluation/eval\_lora\_passk.py --result-suffix h4\_lora\_code\_direct} & \texttt{eval\_lora\_passk\_h4\_lora\_code\_direct.json} \\
-    H5  & \texttt{python3 evaluation/eval\_lora\_cot\_passk.py --lora-path \$CODE --few-shot-k 0 --result-suffix h5\_lora\_code\_cot\_zs} & \texttt{eval\_lora\_cot\_passk\_h5\_lora\_code\_cot\_zs.json} \\
-    H6  & \texttt{python3 evaluation/eval\_lora\_cot\_passk.py --lora-path \$CODE --few-shot-k 2 --result-suffix h6\_lora\_code\_cot\_fs2} & \texttt{eval\_lora\_cot\_passk\_h6\_lora\_code\_cot\_fs2.json} \\
-    H7  & \texttt{python3 evaluation/eval\_lora\_passk.py --lora-path \$COTZS --result-suffix h7\_lora\_cot\_zs\_direct} & \texttt{eval\_lora\_passk\_h7\_lora\_cot\_zs\_direct.json} \\
-    H8  & \texttt{python3 evaluation/eval\_lora\_cot\_passk.py --few-shot-k 0 --result-suffix h8\_lora\_cot\_zs\_cot\_zs} & \texttt{eval\_lora\_cot\_passk\_h8\_lora\_cot\_zs\_cot\_zs.json} \\
-    H9  & \texttt{python3 evaluation/eval\_lora\_passk.py --lora-path \$COTFS --result-suffix h9\_lora\_cot\_fs2\_direct} & \texttt{eval\_lora\_passk\_h9\_lora\_cot\_fs2\_direct.json} \\
-    H10 & \texttt{python3 evaluation/eval\_lora\_cot\_passk.py --few-shot-k 2 --result-suffix h10\_lora\_cot\_fs2\_cot\_fs2} & \texttt{eval\_lora\_cot\_passk\_h10\_lora\_cot\_fs2\_cot\_fs2.json} \\
-    \bottomrule
-  \end{tabular}
-\end{table}
-
-约定环境变量：\texttt{\$CODE = `cat train/latest\_lora\_adapter.txt`}，\texttt{\$COTZS = `cat train/latest\_lora\_cot\_zs\_adapter.txt`}，\texttt{\$COTFS = `cat train/latest\_lora\_cot\_fs2\_adapter.txt`}；H8 / H10 由脚本依据 \texttt{--few-shot-k} 自动选择 \texttt{\$COTZS} 或 \texttt{\$COTFS} 指针，无需显式 \texttt{--lora-path}。
 
 %---------------------------------------------------------------------
 %	参考文献
