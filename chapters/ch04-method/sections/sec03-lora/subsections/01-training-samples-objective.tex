@@ -34,7 +34,7 @@
     \item \textbf{完整序列}：\texttt{apply\_chat\_template(messages, tokenize=True)} 得到完整 token 序列 $T$；
     \item \textbf{非 assistant 前缀}：\texttt{apply\_chat\_template(messages[:-1], add\_generation\_prompt=True)} 得到截至 assistant 起始标记的前缀 $P$；
     \item \textbf{掩码对齐}：比较 $T$ 与 $P$ 的公共前缀长度 $L$，令 \texttt{labels[:L] = -100}，其余位置保留原 token id；
-    \item \textbf{长度约束}：\texttt{MAX\_LENGTH=1024} 为硬上限，超长样本直接截断（训练阶段只保留能完整容纳 assistant 的样本），避免因截断落在 assistant 中段导致的断句偏差；
+    \item \textbf{长度约束}：\texttt{train/train.py}（\texttt{LoRA\_code}）固定 \texttt{MAX\_LENGTH=1024}；\texttt{train/train\_cot.py}（\texttt{LoRA\_cot\_*}）固定 \texttt{MAX\_LENGTH=4096}，以免 few-shot + CoT 目标段被过早截断为全 \texttt{-100} labels；
     \item \textbf{效果与实现收益}：梯度仅对最后一条 assistant 段反向传播；沿用 chat template 对特殊 token 的原生解释，避免手工拼接字符串带来的 tokenizer 不一致。
 \end{itemize}
 

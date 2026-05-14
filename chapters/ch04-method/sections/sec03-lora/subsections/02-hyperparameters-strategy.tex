@@ -33,7 +33,7 @@
     \toprule
     超参数 & 取值 & 说明 \\
     \midrule
-    \texttt{per\_device\_train\_batch\_size} & 4  & 单卡 batch，受 \texttt{MAX\_LENGTH=1024} 与显存约束 \\
+    \texttt{per\_device\_train\_batch\_size} & 4  & 单卡 batch，受序列截断上限（\texttt{train.py} 为 \texttt{MAX\_LENGTH=1024}，\texttt{train\_cot.py} 为 \texttt{MAX\_LENGTH=4096}）与显存共同约束 \\
     \texttt{gradient\_accumulation\_steps}  & 8  & 等效 batch size $= 4 \times 8 = 32$ \\
     \texttt{learning\_rate}                 & 2e-5 & LoRA 常用区间偏低端，稳定优先 \\
     \texttt{num\_train\_epochs}             & 3  & 与训练集规模（$\approx$9000 条）匹配 \\
@@ -49,9 +49,10 @@
 \end{table}
 
 \paragraph{（3）设计依据与一致性约束}
-上述两张表的取值遵循以下三条原则，使得 10 组实验之间仅因训练样本构造差异而产生可解释的指标变化：
+上述两张表的取值遵循以下四条原则，使得 10 组实验之间仅因训练样本构造差异而产生可解释的指标变化：
 \begin{itemize}
-    \item \textbf{跨适配器一致}：三种 LoRA 共享完全相同的结构与优化器超参，仅 \texttt{train\_cot.py} 多出 \texttt{--num-few-shots} 一个分支参数；
-    \item \textbf{与推理侧一致}：训练阶段的 chat template、system 提示、停止 token 均与 4.2.1 节推理 prompt 对齐，避免训练与推理在特殊 token 层面错位；
-    \item \textbf{与数据规模匹配}：$3$ epoch $\times$ 等效 batch size 32 在 $\approx$9000 训练样本上约合 $\approx$850 次 optimizer step，足以让 LoRA 收敛而不至于在 CoT 监督目标上过拟合。
+    \item \textbf{跨适配器一致}：三种 LoRA 共享完全相同的结构与优化器超参，仅 \texttt{train\_cot.py} 多出 \texttt{--num-few-shots} 与可选 \texttt{--max-length} 等命令行分支；
+    \item \textbf{与推理侧一致}：\texttt{LoRA\_code} 路径的 chat 模板与 4.2.1 节 Direct 推理对齐；\texttt{LoRA\_cot\_*} 路径的用户指令与 assistant 形态与 4.4 节 CoT 推理（含 few-shot 回放）对齐，避免特殊 token 或围栏格式在 train/test 间错位；
+    \item \textbf{与数据规模匹配}：$3$ epoch $\times$ 等效 batch size 32 在 $\approx$9000 训练样本上约合 $\approx$850 次 optimizer step，足以让 LoRA 收敛而不至于在 CoT 监督目标上过拟合；
+    \item \textbf{可复现与弱依赖}：训练脚本将 \texttt{report\_to} 设为 \texttt{none}，不依赖 TensorBoard 即可运行；默认截断长度为 \texttt{train.py} 中 \texttt{MAX\_LENGTH=1024}、\texttt{train\_cot.py} 中 \texttt{MAX\_LENGTH=4096}，若需与表~\ref{tab:ch4-lora-optim} 以外取值对齐实验，可通过 \texttt{--max-length} 显式传入并在落盘 \texttt{config.json} 中留痕。
 \end{itemize}

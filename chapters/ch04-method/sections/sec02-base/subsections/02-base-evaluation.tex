@@ -29,4 +29,4 @@
 本文固定 $n{=}10$、$k \in \{1,5,10\}$。仅对 $n$ 等于 \texttt{NUM\_SAMPLES} 的完整样本计入均值，避免异常短池样本拉低估计。
 
 \paragraph{（5）结果落盘}
-评测结束后，除控制台打印三档 pass@k 外，还会将 \texttt{timestamp / num\_problems / num\_samples / temperature / timeout / pass\_at\_k / original\_solution\_pass\_rate} 汇总为一份 JSON 落入 \texttt{evaluation/results/eval\_base\_passk.json}，即 H1 的最终产物，供第五章主效应与交互效应的差分计算直接读取。
+评测结束后，除控制台打印三档 pass@k 外，还将 \texttt{timestamp / num\_problems / num\_samples / temperature / timeout / pass\_at\_k / original\_solution\_pass\_rate} 汇总为 JSON 写入 \texttt{evaluation/results/}。与 \texttt{scripts/train\_eval.sh} 对齐时，应使用 \texttt{--result-suffix h1\_base\_direct}，得到 \texttt{eval\_base\_passk\_h1\_base\_direct.json} 作为 H1 产物；若省略后缀则文件名退化为 \texttt{eval\_base\_passk.json}（易被后续运行覆盖）。该文件供第五章主效应与交互效应的差分计算直接读取。

@@ -20,6 +20,7 @@
 \begin{itemize}
     \item \textbf{占位符}：\texttt{\{func\}}、\texttt{\{params\}}、\texttt{\{question\}} 来自 \texttt{test\_info[0]} 与题面；\texttt{\{thought\}}、\texttt{\{code\}} 对应 \texttt{thought\_step}、\texttt{solution}；
     \item \textbf{脚本对应}：\texttt{LoRA\_code} $\leftrightarrow$ \texttt{train/train.py}；\texttt{LoRA\_cot\_zs} / \texttt{LoRA\_cot\_fs} $\leftrightarrow$ \texttt{train/train\_cot.py}；
+    \item \textbf{CoT 训练数据过滤}：\texttt{train\_cot.py} 在构图前丢弃 \texttt{thought\_step} 为空的样本，与评测侧 few-shot 候选要求「同时具备 \texttt{thought\_step} 与 \texttt{solution}」的取向一致；
     \item \textbf{模板再包装}：下列为语义块，最终字节串仍由基座 \texttt{apply\_chat\_template} 封装。
 \end{itemize}
 
@@ -71,7 +72,7 @@ Think step by step, then output the Python code.
     \begin{itemize}
         \item \textbf{调用形态}：单阶段、一次 \texttt{generate}；
         \item \textbf{前缀}：\textbf{System} + \textbf{User} 与（1a）中 \texttt{LoRA\_code} 训练前缀\textbf{逐字同构}（含 \texttt{Only output the Python code...}）；
-        \item \textbf{后处理}：从生成文本抽取围栏内代码，送单测；
+        \item \textbf{代码抽取}：与 \texttt{eval\_base\_passk.py} / \texttt{eval\_lora\_passk.py} 中 \texttt{extract\_code} 一致——优先取首段 \verb|```python| 围栏，否则首段无语言围栏，否则退回全文（训练标签为无围栏纯代码时，后一路径仍可用）；
         \item \textbf{对应组别}：H1 / H4 / H7 / H9，差异仅在是否挂载 LoRA 及挂载哪一种适配器。
     \end{itemize}
     \item \textbf{\texttt{CoT-ZS}} 与 \textbf{\texttt{CoT-FS($k$)}}（\texttt{evaluation/eval\_lora\_cot\_passk.py}）
@@ -87,7 +88,7 @@ You are an expert algorithm teacher. Generate step-by-step reasoning.
 \end{quote}
             \item \textbf{若 $k{>}0$}：依次追加 $k$ 组 \textbf{User}（示例的 CoT 版题指令）$\rightarrow$ \textbf{Assistant}（示例 \texttt{thought\_step} + fenced \texttt{solution}）；
             \item \textbf{目标题}：再追加一条 \textbf{User}（CoT 版题指令，与训练 \texttt{LoRA\_cot} 相同）；
-            \item \textbf{清洗}：若输出中出现 \verb|```python|，截断其后，避免推理段「偷跑」代码。
+            \item \textbf{清洗}：若输出中出现任意三反引号代码块（\verb|```python|、\verb|```bash| 等任意语言标记或无标记围栏），截断其后，避免推理段「偷跑」代码。
         \end{itemize}
         \item \textbf{Stage-2}（在固定推理条件下生成代码）
         \begin{itemize}
@@ -112,6 +113,19 @@ Write only the Python code in \verb|```python| block.
         \item H3 / H6 / H10：两阶段、$k{>}0$（两阶段各多 $k$ 组示范轮次）；
         \item H7 / H9：推理侧为 Direct，但训练侧 messages 仍按（1a）中 CoT 或 CoT+few-shot 构造，与（1）节因子划分一致。
     \end{itemize}
+\end{itemize}
+
+\paragraph{（1c）仓库路径与数据贯通（与 \texttt{ati-codegen} 一致）}
+下列路径均在项目根目录下解析（与脚本内 \texttt{PROJECT\_ROOT} 一致），便于核对论文与实现是否同源：
+\begin{itemize}
+    \item \textbf{训练语料}：\texttt{data/processed/KodCode\_train.jsonl}（\texttt{train/train.py}、\texttt{train/train\_cot.py} 的 \texttt{DATA\_PATH}）；
+    \item \textbf{评测语料}：\texttt{data/processed/KodCode\_eval.jsonl}（三份评测脚本的 \texttt{DATASET\_PATH}）；
+    \item \textbf{Few-shot 示例库（评测默认）}：\texttt{data/processed/KodCode\_train.jsonl}（\texttt{eval\_lora\_cot\_passk.py} 的 \texttt{--few-shot-pool} 默认值，与训练集同源，题面与评测集按划分不相交）；
+    \item \textbf{基座权重}：\texttt{models/CodeGeeX4-ALL-9B/}；
+    \item \textbf{适配器落盘}：\texttt{train/outputs/<时间戳>/lora\_adapter/}，指针写入 \texttt{train/latest\_lora\_adapter.txt}、\texttt{train/latest\_lora\_cot\_zs\_adapter.txt}、\texttt{train/latest\_lora\_cot\_fs\{k\}\_adapter.txt}；
+    \item \textbf{评测结果}：\texttt{evaluation/results/}，文件名由脚本 \texttt{--result-suffix} 与模式前缀共同决定（与 \texttt{scripts/train\_eval.sh} 中各 \texttt{RUN\_H*} 块一致）；
+    \item \textbf{可调 CLI（训练）}：\texttt{train/train.py} 与 \texttt{train/train\_cot.py} 支持 \texttt{--data-path}、\texttt{--max-length} 覆盖默认 JSONL 与截断上限（论文表~\ref{tab:ch4-lora-optim} 为仓库默认值；显存不足时在命令行下调 \texttt{max-length} 与/或减小 batch，见 \texttt{README.md}）；
+    \item \textbf{评测前置检查}：三份 \texttt{evaluation/*.py} 在加载 vLLM 前会校验 \texttt{models/CodeGeeX4-ALL-9B/} 与评测 JSONL 存在；\texttt{eval\_lora\_passk.py} 另校验 LoRA 目录有效。
 \end{itemize}
 
 \paragraph{（2）合法性约束与有效组合}
@@ -144,7 +158,7 @@ Write only the Python code in \verb|```python| block.
     \toprule
     编号 & 训练侧 & 推理侧 & LoRA 指针 & 评测脚本 \\
     \midrule
-    H1  & Base            & Direct      & ---                                    & \texttt{eval\_base\_passk.py} \\
+    H1  & Base            & Direct      & ---                                    & \texttt{eval\_base\_passk.py --result-suffix h1\_base\_direct} \\
     H2  & Base            & CoT-ZS      & ---                                    & \texttt{eval\_lora\_cot\_passk.py --lora-path NONE --few-shot-k 0} \\
     H3  & Base            & CoT-FS($k$) & ---                                    & \texttt{eval\_lora\_cot\_passk.py --lora-path NONE --few-shot-k k} \\
     H4  & LoRA\_code      & Direct      & \texttt{latest\_lora\_adapter.txt}       & \texttt{eval\_lora\_passk.py} \\
@@ -162,7 +176,7 @@ Write only the Python code in \verb|```python| block.
 \begin{itemize}
     \item \textbf{目标}：10 组结果可复现、相互可比；
     \item \textbf{训练阶段}：\texttt{train.py} 产出 \texttt{LoRA\_code}；\texttt{train\_cot.py}（$k{=}0$ / $k{>}0$）分别产出 \texttt{LoRA\_cot\_zs}、\texttt{LoRA\_cot\_fs($k$)}；各脚本将最新适配器目录写入独立指针文件；
-    \item \textbf{评测阶段}：按开关调用 \texttt{eval\_base\_passk.py}、\texttt{eval\_lora\_passk.py}、\texttt{eval\_lora\_cot\_passk.py}，读取对应指针，结果统一写入 \texttt{evaluation/results/eval\_*\_<suffix>.json}；
+    \item \textbf{评测阶段}：按 \texttt{scripts/train\_eval.sh} 中开关调用三份评测脚本，按需读取（1c）所列指针；结果落盘路径见（1c），其中 H1 使用 \texttt{eval\_base\_passk\_<suffix>.json}，其余组为 \texttt{eval\_lora\_passk\_<suffix>.json} 或 \texttt{eval\_lora\_cot\_passk\_<suffix>.json}；
     \item \textbf{示意图}：数据流见图~\ref{fig:ch4-pipeline}。
 \end{itemize}
 
@@ -214,7 +228,7 @@ Write only the Python code in \verb|```python| block.
 
 \paragraph{（5）结果命名与主要对照口径}
 \begin{itemize}
-    \item \textbf{文件命名}：\texttt{eval\_<mode>\_passk\_<hN\_desc>.json}，后缀与表~\ref{tab:ch4-matrix} 末列一致；
+    \item \textbf{文件命名}：\texttt{eval\_base\_passk\_<suffix>.json}（H1）或 \texttt{eval\_lora\_passk\_<suffix>.json} / \texttt{eval\_lora\_cot\_passk\_<suffix>.json}（其余组），\texttt{<suffix>} 与 \texttt{scripts/train\_eval.sh} 中 \texttt{--result-suffix} 一致；
     \item \textbf{元数据}：CoT 评测 JSON 另存 \texttt{mode}、\texttt{use\_lora}、\texttt{lora\_path}、\texttt{few\_shot\_k} 等字段，便于回溯；
     \item \textbf{主效应}：以 H1 为共同基线，分别通过 $\{$H4, H7, H9$\}$ 抽取训练侧主效应，通过 $\{$H2, H3$\}$ 抽取推理侧主效应；
     \item \textbf{交互效应}：由 $(H8-H7)-(H2-H1)$ 与 $(H10-H9)-(H3-H1)$ 两条差分差分量，判定 LoRA 与 CoT 是否正交可加；
