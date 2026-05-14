@@ -45,7 +45,7 @@
     %
     %   字体设置，不填写则自动调用系统预装字体，详见手册
     % fontset = win, % |mac|macoffice|fandol|none,
-    % decl-page,     % 启用本科原创性声明 / 诚信承诺书页
+    decl-page,     % 启用本科原创性声明 / 诚信承诺书页
   ]{njuthesis}
 
 % 模板选项设置，包括个人信息、外观样式等
@@ -100,9 +100,9 @@
 % 生成目录
 \tableofcontents
 % 生成图片清单
-% \listoffigures
+\listoffigures
 % 生成表格清单
-% \listoftables
+\listoftables
 
 %---------------------------------------------------------------------
 %	正文部分
@@ -110,13 +110,28 @@
 \mainmatter
 
 % 符号表
-% 语法与 description 环境一致
-% 两个可选参数依次为说明区域宽度、符号区域宽度
-% 带星号的符号表(notation*)不会插入目录
-% \begin{notation}[10cm]
-%   \item[DFT] 密度泛函理论 (Density functional theory)
-%   \item[DMRG] 密度矩阵重正化群 (Density-Matrix Reformation-Group)
-% \end{notation}
+\begin{notation}[10cm]
+  \item[LLM] 大语言模型 (Large Language Model)
+  \item[PEFT] 参数高效微调 (Parameter-Efficient Fine-Tuning)
+  \item[LoRA] 低秩适配 (Low-Rank Adaptation)
+  \item[CoT] 思维链 (Chain-of-Thought)
+  \item[ICL] 上下文学习 (In-Context Learning)
+  \item[SFT] 有监督微调 (Supervised Fine-Tuning)
+  \item[Direct] 单阶段直接生成的提示结构（题目 $\rightarrow$ 代码）
+  \item[CoT-ZS] 零样本两阶段思维链推理（Zero-shot CoT）
+  \item[CoT-FS($k$)] 含 $k$ 条示例的少样本两阶段思维链推理（Few-shot CoT）
+  \item[Base] 不加 LoRA 的原始基座（CodeGeeX4-ALL-9B）
+  \item[LoRA\_code] 仅监督 \texttt{solution} 的纯代码 LoRA 适配器
+  \item[LoRA\_cot\_zs] 监督 \texttt{thought\_step + solution} 且训练侧无示例的 CoT LoRA 适配器
+  \item[LoRA\_cot\_fs($k$)] 同上，但训练侧含 $k$ 条 few-shot 示例
+  \item[H1--H10] 训练侧 $\times$ 推理侧二因素析因设计下的十组有效实验
+  \item[pass@$k$] 每题采样 $N$ 次中至少一次通过单测的题目占比的无偏估计
+  \item[$r$] LoRA 低秩分解秩，本文取 32
+  \item[$\alpha$] LoRA 缩放系数，本文取 64
+  \item[$k$] Few-shot 示例条数，本文固定 $k{=}2$
+  \item[$N$] 每题采样数，本文取 10，支撑 pass@1/5/10 估计
+  \item[DiD] 差分差分量 (Difference-in-Differences)，用于检验交互效应
+\end{notation}
 
 % 正文写作建议：
 %   1. 主文件仅负责章节总控（按顺序 \input 各 chapter）
@@ -150,6 +165,204 @@
 % 附录部分使用单独的字母序号
 \appendix
 
+\chapter{Prompt 模板字面全文}
+\label{appendix:prompts}
+
+本附录给出第四章三类训练侧与三类推理侧 Prompt 的逐字模板，便于第三方按本文协议复现 H1--H10 的实验结果。占位符 \texttt{\{func\}}、\texttt{\{params\}}、\texttt{\{question\}}、\texttt{\{thought\}}、\texttt{\{code\}} 的来源与第四章 4.1 节（1a）一致。
+
+\section{Direct 推理侧（H1 / H4 / H7 / H9）}
+单阶段、一次 \texttt{generate}，对应 \texttt{evaluation/eval\_base\_passk.py} 与 \texttt{eval\_lora\_passk.py}。
+\begin{itemize}
+    \item \textbf{System}：
+\begin{quote}\ttfamily\footnotesize
+You are an expert Python programmer. Write correct Python code to solve the given problem.
+\end{quote}
+    \item \textbf{User}：
+\begin{quote}\ttfamily\footnotesize
+Implement the function `\{func\}' that takes \{params\} to solve:\\[0.3em]
+\{question\}\\[0.3em]
+Only output the Python code, no explanation.
+\end{quote}
+\end{itemize}
+
+\section{CoT-ZS 推理侧（H2 / H5 / H8）}
+两阶段、两次 \texttt{generate}，对应 \texttt{evaluation/eval\_lora\_cot\_passk.py --few-shot-k 0}。
+
+\paragraph{Stage-1（推理生成）}
+\begin{itemize}
+    \item \textbf{System}：
+\begin{quote}\ttfamily\footnotesize
+You are an expert algorithm teacher. Generate step-by-step reasoning.
+\end{quote}
+    \item \textbf{User}：
+\begin{quote}\ttfamily\footnotesize
+Implement the function `\{func\}' that takes \{params\} to solve:\\[0.3em]
+\{question\}\\[0.3em]
+Think step by step, then output the Python code.
+\end{quote}
+\end{itemize}
+
+\paragraph{Stage-2（代码生成）}
+Stage-1 输出经 \texttt{MAX\_REASONING\_CHARS=1200} 与 \texttt{MAX\_REASONING\_PROMPT\_TOKENS=256} 二级截断后写入 Stage-2 上下文：
+\begin{itemize}
+    \item \textbf{System}：
+\begin{quote}\ttfamily\footnotesize
+You are an expert Python programmer. Based on the reasoning, write the code.
+\end{quote}
+    \item \textbf{User}：
+\begin{quote}\ttfamily\footnotesize
+Reasoning:\\[0.2em]
+\{truncated\_stage1\_text\}\\[0.5em]
+Now implement the function `\{func\}' that takes \{params\} to solve:\\[0.3em]
+\{question\}\\[0.3em]
+Write only the Python code in \verb|```python| block.
+\end{quote}
+\end{itemize}
+
+\section{CoT-FS($k$) 推理侧（H3 / H6 / H10）}
+在 CoT-ZS 两阶段 system 各自之后插入 $k$ 组示例，再接目标题；两阶段共享同一 $k$ 组、相同顺序。每组示例形如：
+\begin{itemize}
+    \item \textbf{User（示例题，CoT 版指令）}：
+\begin{quote}\ttfamily\footnotesize
+Implement the function `\{shot\_func\}' that takes \{shot\_params\} to solve:\\[0.3em]
+\{shot\_question\}\\[0.3em]
+Think step by step, then output the Python code.
+\end{quote}
+    \item \textbf{Assistant（示例 \texttt{thought\_step + fenced solution}）}：
+\begin{quote}\ttfamily\footnotesize
+\{shot\_thought\}\\[0.5em]
+\verb|```python|\\
+\{shot\_code\}\\
+\verb|```|
+\end{quote}
+\end{itemize}
+示例选择：按 $\mathrm{score}(q, q') = 2 \cdot |\mathrm{strong\_tags}(q) \cap \mathrm{strong\_tags}(q')| + |\mathrm{tags}(q) \cap \mathrm{tags}(q')|$ 评分取 top $\max(k, 4k)$，再以 \texttt{seed = 2026 + problem\_idx \(\times\) 1000 + sample\_idx} 抽样 $k$ 条。
+
+\section{LoRA 训练侧 Chat 模板}
+
+\paragraph{LoRA\_code（H4 训练）}
+单条样本为 system + user + assistant 共 3 条，user/system 与 Direct 推理逐字同构；assistant 为可执行 Python 正文（\textbf{无} Markdown 围栏）。Loss 仅落在 assistant 段。
+
+\paragraph{LoRA\_cot\_zs（H7 / H8 训练）}
+\begin{itemize}
+    \item \textbf{System}：
+\begin{quote}\ttfamily\footnotesize
+You are an expert Python programmer. Before writing code, think through\\
+the problem step by step. Format your response as numbered reasoning\\
+steps followed by the Python solution.
+\end{quote}
+    \item \textbf{User}：与 CoT-ZS Stage-1 相同；
+    \item \textbf{Assistant}：\texttt{\{thought\}} + 空行 + \verb|```python|\,\texttt{\{code\}}\,\verb|```|。
+\end{itemize}
+
+\paragraph{LoRA\_cot\_fs($k$)（H9 / H10 训练）}
+在 \texttt{LoRA\_cot\_zs} 的 system 之后拼接 $k$ 组示范（与推理侧 CoT-FS 中 user/assistant 字面同构），再接当前题 user 与 assistant；前 $k$ 组示例 labels 全部为 \texttt{-100}，loss 仅落在当前题 assistant 段。
+
+\chapter{典型样本失效对照}
+\label{appendix:cases}
+
+本附录给出第 5.3.3 节失效模式归因所引用的典型样本对照详情，每例包含原题、被测函数签名、单测代码、模型输出摘录与失败类别判定。题目 id 与摘录均来自 \texttt{evaluation/results/} 下评测 JSON 的 \texttt{problem\_idx} 与 \texttt{generations} 字段。
+
+\section{样本 A：算法范式明确的单步问题}
+\paragraph{选题动机}用以验证「不难的题目不被方法差异放大」，预期 H1 / H4 / H8 / H10 通过率均接近 1。
+% TODO: 补充题目 id（如 \texttt{KodCode\_xxx}）、原题摘录（含函数签名 \{func\}/\{params\}）、单测代码、四组模型输出与是否通过。
+
+\section{样本 B：需要分步推理的复杂搜索/DP 问题}
+\paragraph{选题动机}支撑 5.3.2 节「LoRA $\times$ CoT 正协同」结论，预期 H1 在 Runtime / Timeout 类失败上显著高于 H8 / H10。
+% TODO: 补充题目 id、原题摘录、单测、四组输出与失败类别（Logic / Structural / Runtime / Timeout）。
+
+\section{样本 C：函数签名与常规直觉不一致的题目}
+\paragraph{选题动机}支撑 5.3.1 节关于稳定性的论述，预期 H1 高发 Structural 错误，LoRA 类方法显著降低签名漂移率。
+% TODO: 补充题目 id、签名差异点、四组输出对比。
+
+\section{反例：CoT 推理段失效模式}
+对应 5.3.3 节（3）「CoT 推理段的典型失效」三类：
+\paragraph{反例 D：推理偷跑代码}
+% TODO: 摘录一例 Stage-1 输出含 \texttt{```python} 块的原始文本，配 4.4.1 节清洗规则前后对照。
+\paragraph{反例 E：推理过长触发截断}
+% TODO: 摘录一例 Stage-1 长度超过 \texttt{MAX\_REASONING\_CHARS=1200} 的样本，给出截断前后差异。
+\paragraph{反例 F：推理与代码不一致}
+% TODO: 摘录一例 Stage-1 给出 A 算法、Stage-2 实现 B 算法的样本，配执行结果。
+
+\chapter{评测脚本关键代码段}
+\label{appendix:codes}
+
+本附录摘录第 4 章流程中三段独立可读的核心实现，便于读者按字面复现评测口径。完整脚本见 \texttt{ati-codegen/evaluation/}。
+
+\section{pass@k 无偏估计}
+对应 \cite{chen2021evaluating} 提出的无偏估计，三份评测脚本（\texttt{eval\_base\_passk.py} / \texttt{eval\_lora\_passk.py} / \texttt{eval\_lora\_cot\_passk.py}）实现完全一致：
+\begin{quote}\ttfamily\footnotesize
+def pass\_at\_k(n: int, c: int, k: int) -> float:\\
+\hspace*{2em}if n < k:\\
+\hspace*{4em}return float("nan")\\
+\hspace*{2em}if n - c < k:\\
+\hspace*{4em}return 1.0\\
+\hspace*{2em}return 1.0 - comb(n - c, k) / comb(n, k)
+\end{quote}
+其中 $n$ 为单题采样数（本文取 \texttt{NUM\_SAMPLES=10}），$c$ 为通过数；公式等价于 $1 - \binom{n-c}{k} / \binom{n}{k}$。
+
+\section{代码抽取（Direct 取首段、CoT 取末段）}
+4.2.2 节 Direct 路径与 4.4.1 节 CoT 路径的代码抽取规则在脚本中以两份 \texttt{extract\_code} 实现，差异仅在 \texttt{[0]} 与 \texttt{[-1]}：
+\begin{quote}\ttfamily\footnotesize
+\# eval\_base\_passk.py / eval\_lora\_passk.py（首段，Direct）\\
+def extract\_code(text: str) -> str:\\
+\hspace*{2em}code\_blocks = re.findall(r"```python(.*?)```", text, re.S)\\
+\hspace*{2em}if not code\_blocks:\\
+\hspace*{4em}code\_blocks = re.findall(r"```(.*?)```", text, re.S)\\
+\hspace*{2em}if code\_blocks:\\
+\hspace*{4em}return code\_blocks[0].strip()\\
+\hspace*{2em}return text.strip()\\[0.4em]
+\# eval\_lora\_cot\_passk.py（末段，CoT-FS 时绕开 few-shot 回放）\\
+def extract\_code(text: str) -> str:\\
+\hspace*{2em}\dots\\
+\hspace*{2em}return code\_blocks[-1].strip()
+\end{quote}
+
+\section{Stage-1 输出截断}
+对应 4.4.1 节（1）「避免推理阶段偷跑代码污染第二阶段上下文」：
+\begin{quote}\ttfamily\footnotesize
+def \_clip\_reasoning\_before\_code(text: str) -> str:\\
+\hspace*{2em}idx\_py  = text.find("```python")\\
+\hspace*{2em}idx\_any = text.find("```")\\
+\hspace*{2em}cut\_idx = min(i for i in [idx\_py, idx\_any] if i >= 0) \\
+\hspace*{4em}if (idx\_py >= 0 or idx\_any >= 0) else -1\\
+\hspace*{2em}if cut\_idx >= 0:\\
+\hspace*{4em}return text[:cut\_idx].rstrip()\\
+\hspace*{2em}return text.strip()
+\end{quote}
+此处取 \texttt{```python} 与 \texttt{```} 两个起始位置中的较小者，意味着任意三反引号围栏（含 \texttt{```bash} 等其他语言标记或无标记块）均会触发截断，与 4.4.1 节（1）「输出清洗」一致。
+
+\chapter{H1--H10 命令行完整对照}
+\label{appendix:cmds}
+
+本附录将 \texttt{scripts/train\_eval.sh} 中各 \texttt{RUN\_H*} 块逐组展开为论文化命令行表，便于第三方按 \texttt{result-suffix} 与本文表~\ref{tab:ch4-matrix} 对应。统一约定 \texttt{FS\_K=2}，所有命令在仓库根目录下执行。
+
+\begin{table}[!htb]
+  \centering
+  \caption{H1--H10 评测命令行与结果文件命名}
+  \label{tab:appendix-cmds}
+  \footnotesize
+  \setlength{\tabcolsep}{3pt}
+  \begin{tabular}{cp{8.5cm}l}
+    \toprule
+    编号 & 命令行（在 \texttt{ati-codegen/} 下执行） & 结果 JSON \\
+    \midrule
+    H1  & \texttt{python3 evaluation/eval\_base\_passk.py --result-suffix h1\_base\_direct} & \texttt{eval\_base\_passk\_h1\_base\_direct.json} \\
+    H2  & \texttt{python3 evaluation/eval\_lora\_cot\_passk.py --lora-path NONE --few-shot-k 0 --result-suffix h2\_base\_cot\_zs} & \texttt{eval\_lora\_cot\_passk\_h2\_base\_cot\_zs.json} \\
+    H3  & \texttt{python3 evaluation/eval\_lora\_cot\_passk.py --lora-path NONE --few-shot-k 2 --result-suffix h3\_base\_cot\_fs2} & \texttt{eval\_lora\_cot\_passk\_h3\_base\_cot\_fs2.json} \\
+    H4  & \texttt{python3 evaluation/eval\_lora\_passk.py --result-suffix h4\_lora\_code\_direct} & \texttt{eval\_lora\_passk\_h4\_lora\_code\_direct.json} \\
+    H5  & \texttt{python3 evaluation/eval\_lora\_cot\_passk.py --lora-path \$CODE --few-shot-k 0 --result-suffix h5\_lora\_code\_cot\_zs} & \texttt{eval\_lora\_cot\_passk\_h5\_lora\_code\_cot\_zs.json} \\
+    H6  & \texttt{python3 evaluation/eval\_lora\_cot\_passk.py --lora-path \$CODE --few-shot-k 2 --result-suffix h6\_lora\_code\_cot\_fs2} & \texttt{eval\_lora\_cot\_passk\_h6\_lora\_code\_cot\_fs2.json} \\
+    H7  & \texttt{python3 evaluation/eval\_lora\_passk.py --lora-path \$COTZS --result-suffix h7\_lora\_cot\_zs\_direct} & \texttt{eval\_lora\_passk\_h7\_lora\_cot\_zs\_direct.json} \\
+    H8  & \texttt{python3 evaluation/eval\_lora\_cot\_passk.py --few-shot-k 0 --result-suffix h8\_lora\_cot\_zs\_cot\_zs} & \texttt{eval\_lora\_cot\_passk\_h8\_lora\_cot\_zs\_cot\_zs.json} \\
+    H9  & \texttt{python3 evaluation/eval\_lora\_passk.py --lora-path \$COTFS --result-suffix h9\_lora\_cot\_fs2\_direct} & \texttt{eval\_lora\_passk\_h9\_lora\_cot\_fs2\_direct.json} \\
+    H10 & \texttt{python3 evaluation/eval\_lora\_cot\_passk.py --few-shot-k 2 --result-suffix h10\_lora\_cot\_fs2\_cot\_fs2} & \texttt{eval\_lora\_cot\_passk\_h10\_lora\_cot\_fs2\_cot\_fs2.json} \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+约定环境变量：\texttt{\$CODE = `cat train/latest\_lora\_adapter.txt`}，\texttt{\$COTZS = `cat train/latest\_lora\_cot\_zs\_adapter.txt`}，\texttt{\$COTFS = `cat train/latest\_lora\_cot\_fs2\_adapter.txt`}；H8 / H10 由脚本依据 \texttt{--few-shot-k} 自动选择 \texttt{\$COTZS} 或 \texttt{\$COTFS} 指针，无需显式 \texttt{--lora-path}。
+
 %---------------------------------------------------------------------
 %	参考文献
 %---------------------------------------------------------------------
@@ -162,6 +375,17 @@
 %---------------------------------------------------------------------
 
 \begin{acknowledgement}
+四年时光转瞬即逝，回望本科求学之路，得益于诸多师长、同窗与亲友的关怀与扶持，毕业论文方能顺利收笔。
+
+首先衷心感谢我的指导老师。从选题立意、实验设计到论文修改，老师在繁忙的科研与教学工作之余始终给予我细致入微的指导。导师严谨的治学态度、求真务实的科研精神与对学生的悉心包容，使我在大语言模型与算法代码生成这一交叉方向上得以从模糊设想走向系统性研究，亦让我懂得做学问应当首重实证、其次才论修辞，这些教诲将令我受益终身。
+
+感谢实验室的师兄师姐与同门同学。在数据预处理、模型训练与评测脚本调试中，他们慷慨地分享了诸多工程经验与算力资源；在二因素析因实验设计与统计口径的讨论中，他们的提问与质疑促使我反复审视方法的严密性，使本文的实验框架日趋完整。
+
+感谢南京大学的求学环境与课程体系，感谢曾为我授课的各位老师，他们为我打下了机器学习、自然语言处理与软件工程的基础。感谢在四年学习生活中始终陪伴的好友与室友，与他们的日常交流让科研之路不再孤单。
+
+最后，深深感谢我的父母。多年以来他们以无条件的信任与支持，让我得以心无旁骛地求学。家是永远的港湾，亦是前行最大的底气。
+
+谨以此文，献给所有在求学路上给予我帮助与温暖的人。
 \end{acknowledgement}
 
 % 完工
