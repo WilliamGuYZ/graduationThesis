@@ -2,7 +2,8 @@
 
 三种适配器共用同一套超参数，仅在样本构造层面不同（4.3.1 节）。超参数分为 LoRA 结构、优化器、数值精度三组，取值依据见表后说明。
 
-\paragraph{（1）LoRA 结构超参数}
+\subsubsection{LoRA 结构超参数}
+LoRA 结构相关超参数取值如表~\ref{tab:ch4-lora-struct} 所示。
 \begin{table}[!htb]
   \centering
   \caption{LoRA 结构配置}
@@ -23,7 +24,7 @@
 \end{table}
 将 LoRA 注入 ChatGLM 块中的 \texttt{query\_key\_value}（融合 QKV）、注意力输出 \texttt{dense} 以及 MLP 两侧 \texttt{dense\_h\_to\_4h}、\texttt{dense\_4h\_to\_h}，使 CoT 推理段与代码段在参数侧均可获得适配空间，这一点在 \texttt{LoRA\_cot\_*} 的监督目标下尤为关键。
 
-\paragraph{（2）优化器与调度}
+\subsubsection{优化器与调度}
 \begin{table}[!htb]
   \centering
   \caption{优化器、学习率调度与数值精度}
@@ -48,7 +49,7 @@
   \end{tabular}
 \end{table}
 
-\paragraph{（3）设计依据与一致性约束}
+\subsubsection{设计依据与一致性约束}
 上述两张表的取值遵循以下四条原则，使得 10 组实验之间仅因训练样本构造差异而产生可解释的指标变化：
 \begin{itemize}
     \item \textbf{跨适配器一致}：三种 LoRA 共享完全相同的结构与优化器超参，仅 \texttt{train\_cot.py} 多出 \texttt{--num-few-shots} 与可选 \texttt{--max-length} 等命令行分支；

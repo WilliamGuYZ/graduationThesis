@@ -6,7 +6,40 @@ LoRA（Low-Rank Adaptation）是目前应用最广泛、稳定性最强的参数
 \begin{equation}
     W' = W + \Delta W = W + BA,\quad A \in \mathbb{R}^{r \times k},\ B \in \mathbb{R}^{d \times r},\ r \ll \min(d, k),
 \end{equation}
-其中秩 $r$ 通常取 $8$ 至 $64$。训练时冻结 $W$，仅优化 $A$ 与 $B$；前向传播时，原始注意力输出与低秩分支输出叠加得到最终表示，既保留了模型原本的代码理解与生成能力，又能针对性地学习算法题的解题模式与逻辑规律。
+其中秩 $r$ 通常取 $8$ 至 $64$。训练时冻结 $W$，仅优化 $A$ 与 $B$；前向传播时，原始注意力输出与低秩分支输出叠加得到最终表示，既保留了模型原本的代码理解与生成能力，又能针对性地学习算法题的解题模式与逻辑规律。低秩分支与冻结主干的并联关系如图~\ref{fig:ch2-lora-structure} 所示：输入 $x$ 同时进入冻结主干 $W$ 与可训练旁路 $A \to B$，二者输出相加得到最终隐藏态 $h = Wx + BAx$，旁路的低秩约束 $r \ll \min(d, k)$ 决定了可训练参数量仅为全量微调的极小比例。
+
+\begin{figure}[!htb]
+  \centering
+  \begin{tikzpicture}[
+    node distance=5mm and 6mm,
+    inout/.style={draw, circle, minimum size=7mm, font=\footnotesize, inner sep=0pt},
+    frozen/.style={draw, fill=black!10, rounded corners=2pt, align=center, minimum height=10mm, minimum width=18mm, font=\footnotesize},
+    train/.style={draw, fill=blue!10, rounded corners=2pt, align=center, minimum height=8mm, minimum width=14mm, font=\footnotesize},
+    sum/.style={draw, circle, minimum size=6mm, font=\footnotesize, inner sep=0pt},
+    arr/.style={-{Stealth[length=2mm]}, thick},
+    lbl/.style={font=\scriptsize, align=center},
+  ]
+    \node[inout] (x) {$x$};
+    \node[frozen, right=10mm of x] (W) {$W$\\ \scriptsize 冻结};
+    \node[train, above=8mm of W, xshift=14mm] (A) {$A \in \mathbb{R}^{r\times k}$};
+    \node[train, right=of A] (B) {$B \in \mathbb{R}^{d\times r}$};
+    \node[sum, right=20mm of W] (s) {$+$};
+    \node[inout, right=of s] (h) {$h$};
+
+    \draw[arr] (x) -- (W);
+    \draw[arr] (x.east) to [bend left=35] (A.west);
+    \draw[arr] (A) -- node[midway, above, lbl]{$r$ 维} (B);
+    \draw[arr] (B.east) to [bend left=20] (s.north);
+    \draw[arr] (W) -- (s);
+    \draw[arr] (s) -- (h);
+
+    \node[lbl, below=1mm of W] {主干分支：$Wx$};
+    \node[lbl, above=1mm of A.north -| s] {可训练低秩旁路：$BAx$};
+    \node[lbl, below=2mm of h, xshift=-6mm] {$h = Wx + BAx$};
+  \end{tikzpicture}
+  \caption{LoRA 在单层线性变换上的结构：冻结主干 $W$ 与可训练低秩旁路 $A\!\to\!B$ 并联，输出叠加}
+  \label{fig:ch2-lora-structure}
+\end{figure}
 
 相比于全量微调和其他轻量适配方法，LoRA 具有多重优势：
 \begin{itemize}

@@ -2,7 +2,7 @@
 
 本章为 CodeGeeX4-ALL-9B\cite{thudm2024codegeex4all9b} 的 LoRA 微调与 pass@$k$\cite{chen2021evaluating} 评测构建统一语料。原始来源选用公开的 KodCode\cite{xu2025kodcode}——其条目天然附带题目、参考解答与针对性单测，契合「生成—执行—判定」闭环。
 
-\paragraph{（1）原始字段}
+\subsection{原始字段}
 KodCode 以 Parquet 列式存储，每条记录含四个字段：
 \begin{itemize}
     \item \texttt{question}：自然语言题目描述；
@@ -11,13 +11,13 @@ KodCode 以 Parquet 列式存储，每条记录含四个字段：
     \item \texttt{test\_info}：被测函数签名（\texttt{function\_declaration}、\texttt{function\_name}、\texttt{parameter\_list}）。
 \end{itemize}
 
-\paragraph{（2）任务形式化与评测指标}
+\subsection{任务形式化与评测指标}
 给定题目 $q$，模型需输出可直接执行的 Python 解答 $\hat{s}$；将 $\hat{s}$ 与官方 $t$ 组合在隔离子进程中运行，全部断言通过即记一次成功。令 $n$ 为采样次数、$c$ 为成功次数，
 \[
 \text{pass@}k \;=\; \mathbb{E}_{q}\!\left[\,1 - \binom{n-c}{k}\Big/\binom{n}{k}\,\right].
 \]
 
-\paragraph{（3）数据流水线总览}
+\subsection{数据流水线总览}
 从原始 Parquet 到训练/评测 JSONL 的五阶段流程见图~\ref{fig:ch3-pipeline}，最终产出训练集 $\approx$9000 条、评测集 1000 条。
 
 \begin{figure}[!htb]
@@ -49,7 +49,7 @@ KodCode 以 Parquet 列式存储，每条记录含四个字段：
   \label{fig:ch3-pipeline}
 \end{figure}
 
-\paragraph{（4）单条样本示例}
+\subsection{单条样本示例}
 图~\ref{fig:ch3-sample} 摘录评测集首条样本（「将数组划分为 $k$ 个等和子集」）的 JSONL 记录。单条样本同时承载题干、参考解答、单测、函数签名、思维步骤与算法标签六类信息，共同支撑后续训练侧与推理侧的所有对照配置。少样本检索所需的 \texttt{strong\_tags} 不持久化，而在检索时与 3.3.2 节强标签常量取交集即时派生。
 
 \begin{figure}[!htb]

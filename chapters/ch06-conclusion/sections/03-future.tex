@@ -1,6 +1,6 @@
 % Section 6.3: 不足与未来工作
 
-\paragraph{（1）本文研究的局限}
+\subsection{本文研究的局限}
 \begin{itemize}
     \item \textbf{基座单一}：仅 CodeGeeX4-ALL-9B（$\approx$9B），跨规模（1.5B / 14B）与跨家族（DeepSeek-Coder、StarCoder）泛化未验证；
     \item \textbf{数据域单一}：偏算法题，工程型编码任务（API、脚本、框架）未覆盖；
@@ -9,14 +9,14 @@
     \item \textbf{多 seed 规模有限}：仅锚点组复跑，部分差分量统计显著性不强。
 \end{itemize}
 
-\paragraph{（2）方法层面}
+\subsection{方法层面}
 \begin{itemize}
     \item \textbf{混合推理策略}：若 $\mathrm{H7} \gtrsim \mathrm{H8}$ 且 $\mathrm{H9} \gtrsim \mathrm{H10}$ 同时成立，按题目难度动态切换 Direct / CoT-ZS / CoT-FS；
     \item \textbf{自适应 $k$}：放开「训练/推理 $k$ 匹配」硬约束，按题目侧信号动态调节，混合训练目标覆盖多档示例数；
     \item \textbf{更高效 CoT 目标}：assistant 段内推理/代码加权，或引入 DPO/SimPO 偏好学习。
 \end{itemize}
 
-\paragraph{（3）系统层面}
+\subsection{系统层面}
 \begin{itemize}
     \item \textbf{推理-执行闭环}：子进程执行器接入采样层，基于单测反馈做 self-debug；
     \item \textbf{更大数据规模}：\texttt{HEAD\_N} 扩到 $10^5$ 级并替换更强教师模型，考察 LoRA 增益曲线；

@@ -7,7 +7,7 @@
     \item \textbf{本节任务}：将 H2、H3、H5、H6、H8、H10 共 6 组 CoT 评测按设问重组为三块对照，作为第五章归因的直接依据。
 \end{itemize}
 
-\paragraph{（1）推理侧主效应（训练侧固定为 Base）}
+\subsubsection{推理侧主效应（训练侧固定为 Base）}
 以 H1 为共同基线，抽取不依赖任何 LoRA 微调的 CoT 推理侧贡献：
 \begin{itemize}
     \item \textbf{$H2 - H1$}：CoT-ZS 相对 Direct 的主效应，回答「零示例推理是否在基座上就有增益」；
@@ -16,7 +16,7 @@
     \item \textbf{对照解释}：三条差分共享同一训练侧（Base），仅推理侧变化，故组内显著差异可归因于 prompt 结构。
 \end{itemize}
 
-\paragraph{（2）训练 $\times$ 推理交互效应}
+\subsubsection{训练 $\times$ 推理交互效应}
 固定 LoRA 作为训练侧、CoT 作为推理侧，通过差分差分量（difference-in-differences）判断两者是否正交可加：
 \begin{itemize}
     \item \textbf{$(H8 - H7) - (H2 - H1)$}：在 \texttt{LoRA\_cot\_zs} 与 Base 上「加 CoT-ZS 推理」两条边际是否一致；
@@ -26,7 +26,7 @@
     \item \textbf{对照解释}：直接对应 4.1 节「LoRA 与 CoT 是否正交可加」的设问，符号与量级即析因设计的主落点。
 \end{itemize}
 
-\paragraph{（3）Few-shot 边际在训练侧上的一致性}
+\subsubsection{Few-shot 边际在训练侧上的一致性}
 只变化训练侧，观察 few-shot 的边际贡献是否稳定：
 \begin{itemize}
     \item \textbf{$H3 - H2$（Base）vs $H6 - H5$（LoRA\_code）}：两条「$k$ 例相对 $0$ 例」的边际在\textbf{未显式监督 CoT 格式}的训练侧上是否一致；
@@ -35,7 +35,7 @@
     \item \textbf{读法}：若两条边际量级接近，则 few-shot 主要作用于推理侧；若差异显著，则训练侧调节其有效性，结论中需分情况讨论。
 \end{itemize}
 
-\paragraph{（4）对照汇总}
+\subsubsection{对照汇总}
 \begin{itemize}
     \item 三组设计均为「单因子变动、其余固定」，覆盖全部与 CoT 相关的显著差分读法；
     \item 结果文件命名遵循表~\ref{tab:ch4-matrix} 末列；

@@ -2,7 +2,7 @@
 
 本节汇总 6 组 CoT 相关评测（H2、H3、H5、H6、H8、H10）的 pass@$k$。与 5.2.1 节 Direct 侧配合，即可覆盖 4.1 节矩阵的全部 10 组。
 
-\paragraph{（1）主结果表}
+\subsubsection{主结果表}
 表~\ref{tab:ch5-cot} 按训练侧分组排列六组 CoT 实验；同一训练侧内按推理侧 CoT-ZS 在前、CoT-FS($k$) 在后。
 
 \begin{table}[!htb]
@@ -28,7 +28,7 @@
 
 % TODO: 跑完 H2/H3/H5/H6/H8/H10 后，将上表 TODO 占位替换为实际 pass@k 数值。
 
-\paragraph{（2）观察要点}
+\subsubsection{观察要点}
 表~\ref{tab:ch5-cot} 叠加 5.2.1 节的四组 Direct 结果，即可取出 5.1.3 节所定义的所有差分量：
 \begin{itemize}
     \item \textbf{推理侧主效应}：H2 − H1、H3 − H1 以及 H3 − H2，回答「零示例 / 含示例 CoT 是否在基座上就有增益」；
@@ -37,7 +37,7 @@
 \end{itemize}
 上述差分的具体数值、符号与显著性留待 5.3 节逐项讨论。
 
-\paragraph{（3）辅助观测量}
+\subsubsection{辅助观测量}
 本节同时关注 CoT 推理特有的两项工程量：
 \begin{itemize}
     \item \textbf{推理段截断触发率}：统计 \texttt{MAX\_REASONING\_CHARS} 与 \texttt{MAX\_REASONING\_PROMPT\_TOKENS} 两级截断的命中比例，用以验证 4.4.4 节预算配置是否合理；

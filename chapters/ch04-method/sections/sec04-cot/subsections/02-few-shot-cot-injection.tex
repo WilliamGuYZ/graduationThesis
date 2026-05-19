@@ -9,7 +9,7 @@ Few-shot CoT（CoT-FS($k$)）在 CoT-ZS 基础上的要点如下：
     \item \textbf{选池原则}：按强标签检索，训练与评测共享同一评分函数，以保证示例与目标题尽量同构。
 \end{itemize}
 
-\paragraph{（1）候选评分与选池}
+\subsubsection{候选评分与选池}
 对每条目标样本 $q$，从 3.3.2 节定义的强标签集合派生 \texttt{strong\_tags}，在候选集合（训练集或评测集扣除 $q$）上按下式打分：
 \[
 \mathrm{score}(q, q') = 2 \cdot \bigl|\,\mathrm{strong\_tags}(q) \cap \mathrm{strong\_tags}(q')\,\bigr|
@@ -21,7 +21,7 @@ Few-shot CoT（CoT-FS($k$)）在 CoT-ZS 基础上的要点如下：
     \item \textbf{池内抽样}：再随机抽样，避免总是固定命中极少数高分题。
 \end{itemize}
 
-\paragraph{（2）训练/评测两侧的随机性差异}
+\subsubsection{训练/评测两侧的随机性差异}
 \begin{itemize}
     \item \textbf{共同点}：两侧共用同一评分函数与同一强标签集合，差异仅在随机采样；
     \item \textbf{训练侧}：\texttt{random.sample(pool, k)}，依赖 \texttt{seed=42} 的全局 RNG，每个 epoch 的示例在统计上来自同一分布；
@@ -29,7 +29,7 @@ Few-shot CoT（CoT-FS($k$)）在 CoT-ZS 基础上的要点如下：
     \item \textbf{合取含义}：训练与评测在「评分 + 候选池构造」上统计一致；评测侧因固定 seed，任意第三方可按题号与采样编号逐条复核。
 \end{itemize}
 
-\paragraph{（3）示例拼接与预算分配}
+\subsubsection{示例拼接与预算分配}
 \begin{itemize}
     \item \textbf{多轮形态}：$k$ 条示例在 Stage-1 与 Stage-2 中均为「\textbf{User（CoT 版题目指令）} $\rightarrow$ \textbf{Assistant（推理 + fenced Python）}」，置于目标轮次之前（与 4.1 节（1b）一致），再接目标题 User 或 \texttt{Reasoning:} 综合 User；
     \item \textbf{三类长度预算}（两阶段 prompt 共享）：
@@ -40,7 +40,7 @@ Few-shot CoT（CoT-FS($k$)）在 CoT-ZS 基础上的要点如下：
     \end{itemize}
 \end{itemize}
 
-\paragraph{（4）训练/推理 $k$ 匹配的强约束}
+\subsubsection{训练/推理 $k$ 匹配的强约束}
 \begin{itemize}
     \item \textbf{规则来源}：4.1 节合法性约束；训练侧为 \texttt{LoRA\_cot\_fs($k$)} 时，推理 \texttt{--few-shot-k} 必须同为 $k$；
     \item \textbf{脚本行为}：不匹配时评测脚本显式退出（H10 对应 \texttt{FS\_K}）；

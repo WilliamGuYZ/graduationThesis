@@ -8,4 +8,34 @@ P(x_t \mid x_1, x_2, \dots, x_{t-1}; \theta)
 \]
 其中 \(x_t\) 为当前待预测的 token，\(x_1,\dots,x_{t-1}\) 为已生成序列，\(\theta\) 表示模型参数。在解码阶段，可通过贪心搜索、束搜索或随机采样等策略确定输出序列，分别在输出确定性、多样性与正确性之间取得不同权衡。
 
-得益于自注意力机制对全局上下文的建模能力，Transformer 能够同时关注问题描述、约束条件与历史生成内容，适合算法代码所需的逻辑一致性与结构规范性。但自回归范式存在误差累积效应：早期生成的错误会沿序列不断扩散，最终导致逻辑错误、边界处理缺失或结构异常，这也是算法代码生成稳定性不足的重要原因。
+得益于自注意力机制对全局上下文的建模能力，Transformer 能够同时关注问题描述、约束条件与历史生成内容，适合算法代码所需的逻辑一致性与结构规范性。图~\ref{fig:ch2-autoregressive} 给出该自回归生成过程的逐步示意：每一步均以「问题描述 + 已生成前缀」为输入，经 Transformer 解码器输出下一个 token 的条件概率分布，采样后追加回前缀，直至生成 \texttt{[EOS]}。但自回归范式存在误差累积效应：早期生成的错误会沿序列不断扩散，最终导致逻辑错误、边界处理缺失或结构异常，这也是算法代码生成稳定性不足的重要原因。
+
+\begin{figure}[!htb]
+  \centering
+  \begin{tikzpicture}[
+    node distance=4mm and 5mm,
+    box/.style={draw, rounded corners=2pt, align=center, minimum height=7mm, minimum width=14mm, font=\footnotesize},
+    model/.style={draw, fill=black!5, rounded corners=2pt, align=center, minimum height=10mm, minimum width=18mm, font=\footnotesize},
+    tok/.style={draw, rounded corners=1pt, align=center, minimum height=6mm, minimum width=10mm, font=\scriptsize\ttfamily},
+    arr/.style={-{Stealth[length=2mm]}, thick},
+  ]
+    \node[box] (q) {问题描述\\ \scriptsize prompt $x_{1{:}p}$};
+    \node[tok, right=of q] (t1) {def};
+    \node[tok, right=of t1] (t2) {solve};
+    \node[tok, right=of t2] (t3) {(n)};
+    \node[font=\footnotesize, right=2mm of t3] (dots) {$\cdots$};
+    \node[tok, right=2mm of dots] (tk) {[EOS]};
+
+    \node[model, below=8mm of t2] (m) {Transformer\\Decoder $\theta$};
+    \draw[arr] (q.south) to [bend right=15] (m.west);
+    \draw[arr] (t1.south) -- (m.north -| t1);
+    \draw[arr] (t2.south) -- (m.north);
+    \draw[arr] (t3.south) -- (m.north -| t3);
+
+    \node[font=\scriptsize, below=2mm of m] (p) {$P(x_t \mid x_{1:t-1};\theta)$};
+    \draw[arr] (m.east) to [bend right=10] node[midway, right, font=\scriptsize]{采样 $x_t$} (tk.south);
+    \draw[arr] (tk.west) to [bend right=20] node[midway, above, font=\scriptsize]{追加至前缀} (t3.east);
+  \end{tikzpicture}
+  \caption{Transformer 解码器的自回归生成：每步以「问题 + 已生成前缀」为条件预测下一 token，循环直至 \texttt{[EOS]}}
+  \label{fig:ch2-autoregressive}
+\end{figure}

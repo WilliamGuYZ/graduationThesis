@@ -2,10 +2,10 @@
 
 KodCode 原始 Parquet 存在字段类型不一致（字符串、NumPy 对象、Pandas Series 混杂）、缺失标记多样（NaN / None / 空串并存）、嵌套结构不规范（\texttt{test\_info} 为空列表但键存在）等多种形态，若直接进入训练与评测会引发静默错误。为此 \texttt{convet\_KodCode\_to\_jsonl.py} 以「非空字符串 + 结构化对象完整性」为统一准绳完成规范化，具体分两步处理。
 
-\paragraph{（1）基础字段非空化}
+\subsubsection{基础字段非空化}
 对 \texttt{question}、\texttt{solution}、\texttt{test} 三个字符串字段，先以 \texttt{pd.isna} 将 Pandas 的 NaN 归一为 Python \texttt{None}，再要求 \texttt{strip()} 后非空。任一条件不满足即整条丢弃，避免下游出现「空题干」「空解答」等退化样本。
 
-\paragraph{（2）\texttt{test\_info} 结构归一}
+\subsubsection{\texttt{test\_info} 结构归一}
 原始 \texttt{test\_info} 可能为 NumPy 数组、Pandas Series 或原生 list，元素类型亦不统一。脚本统一 \texttt{tolist()} 为原生 list，并强制首元素为 dict 且同时含 \texttt{function\_declaration}、\texttt{function\_name}、\texttt{parameter\_list} 三个非空字段。这三项是后续拼接评测 prompt 与计算少样本相似度的最小必需信息，缺一即判为不合规。
 
 通过校验的条目以固定字段序、\texttt{ensure\_ascii=False} 单行写入 JSONL，便于事后 \texttt{grep} 与偏移抽样。该阶段不修改任何有效样本内容，仅过滤不合规条目并统一容器类型，为 3.2.2 节的可执行性校验提供纯净输入。

@@ -2,13 +2,13 @@
 
 围绕大语言模型与代码生成，国内外研究大致可以沿三条主线展开：面向代码的预训练与指令微调、参数高效微调方法，以及以链式思维为代表的推理引导机制。
 
-\paragraph{面向代码的大模型研究进展}
+\subsection{面向代码的大模型研究进展}
 在预训练阶段，OpenAI 提出的 Codex 工作首次系统性地验证了大规模代码语料对生成能力的增益，并推动 HumanEval 成为代码生成领域事实上的评测标准\cite{chen2021evaluating}。此后，CodeGen\cite{nijkamp2023codegen2}、Code~Llama、DeepSeek-Coder、CodeGeeX 系列\cite{thudm2024codegeex4all9b} 与 GLM-4 系列\cite{team2024chatglm} 等代码与通用大模型相继开源，在模型规模、训练语料覆盖度与多语言支持方面不断拓展；其中部分代表性大参数量基座模型可参考 LLaMA 系列工作\cite{touvron2023llama}。在此基础上，研究者进一步引入指令微调（Instruction Tuning）与对齐训练，使模型能够更好地理解自然语言描述的编程意图\cite{openai2024gpt4}，如 WizardCoder、Magicoder、OpenCodeInterpreter 等工作在 HumanEval、MBPP、LiveCodeBench 等基准上显著提升了通用代码生成的正确率。国内工业界与高校在该方向上也开展了大量工作，通义千问、DeepSeek、智谱等团队发布的代码模型在中文场景与算法题场景下均展现出与国际主流模型相当的表现。
 
-\paragraph{参数高效微调方法研究进展}
+\subsection{参数高效微调方法研究进展}
 全量微调虽然能够充分利用下游数据，但在大模型时代面临显存占用高、训练成本大、多任务切换不便等现实问题。针对这一瓶颈，参数高效微调（Parameter-Efficient Fine-Tuning, PEFT）逐步成为主流研究方向。Adapter、Prefix-Tuning、Prompt-Tuning 等早期方法在保持主干参数冻结的前提下，仅训练少量附加参数即可取得接近全量微调的效果。2021 年提出的 LoRA（Low-Rank Adaptation）通过低秩矩阵分解对注意力权重增量建模\cite{hu2021lora}，在显著降低训练代价的同时维持了良好的任务适配性能，已成为当前大模型微调的事实标准之一。在此基础上，QLoRA、DoRA、LoRA+ 等扩展方法进一步在量化精度、权重分解方式与学习率策略上做了优化，被广泛应用于指令微调与领域适配任务中。
 
-\paragraph{推理引导与链式思维方法研究进展}
+\subsection{推理引导与链式思维方法研究进展}
 除训练侧的改进外，推理侧的提示工程同样构成代码生成能力提升的重要途径。Wei 等人提出的 Chain-of-Thought（CoT）提示通过在示例中显式展示“逐步推理”过程，显著提升了大模型在数学推理与符号推理任务上的表现\cite{wei2022chain}；Kojima 等人进一步指出，仅需添加 “Let's think step by step” 一句引导即可激发 Zero-shot CoT 能力\cite{kojima2022large}。国内学者亦从知识蒸馏等角度对思维链与大规模语言模型的结合展开研究\cite{li2024cotkd}。此后，Self-Consistency、Tree-of-Thoughts、ReAct 等方法从采样策略、搜索结构与工具调用等角度拓展了结构化推理的研究边界。在代码生成场景中，Self-Planning、Plan-and-Solve、Structured CoT 等工作尝试将“自然语言规划 + 代码实现”的两阶段结构引入生成流程，在 HumanEval 与 APPS 等基准上取得了稳定增益\cite{chen2021evaluating,hendrycks2021measuring}。
 
 综合来看，训练侧的参数高效微调与推理侧的链式思维已分别在各自维度获得广泛验证，但\textbf{二者在算法代码生成场景下的协同机理仍缺乏在统一协议下的系统性析因对照}——这正是本文 1.3 节所要厘清的核心问题。

@@ -1,9 +1,9 @@
 % Subsection 5.1.2: 数据集与基线
 
-\paragraph{（1）数据集口径}
+\subsubsection{数据集口径}
 训练集与评测集分别来自第三章顺序划分产出的 \texttt{data/processed/KodCode\_train.jsonl}（约 9000 条）与 \texttt{KodCode\_eval.jsonl}（约 1000 条）。两份文件在全部 10 组实验中共享，保证不同方法面对同一批题目，具体字段与清洗策略见 3.1--3.4 节。评测集样本均满足「单测可判定且参考解答通过」硬约束，避免无效样本拉低指标下限。
 
-\paragraph{（2）基线与对照组}
+\subsubsection{基线与对照组}
 以 H1（Base + Direct）作为共同基线，与之对照的 9 组覆盖训练侧与推理侧的完整析因：
 \begin{itemize}
     \item \textbf{训练侧对照}：H4 / H7 / H9 分别引入 \texttt{LoRA\_code} / \texttt{LoRA\_cot\_zs} / \texttt{LoRA\_cot\_fs($k$)}，推理侧同为 Direct；
@@ -12,7 +12,7 @@
 \end{itemize}
 全部配置与评测脚本入口参见 4.1 节表~\ref{tab:ch4-matrix}，本章直接按其口径取数不再重述。
 
-\paragraph{（3）固定变量清单}
+\subsubsection{固定变量清单}
 为让 10 组指标差异可归因到方法本身，以下变量在全部实验中固定不变：
 \begin{itemize}
     \item \textbf{基座权重}、\textbf{tokenizer}、\textbf{chat template}、\textbf{bf16 精度}；

@@ -2,7 +2,7 @@
 
 三种 LoRA 适配器（\texttt{LoRA\_code}、\texttt{LoRA\_cot\_zs}、\texttt{LoRA\_cot\_fs(k)}）共用 \texttt{KodCode\_train.jsonl}，但在 assistant 回复的构造与 loss 计算口径上有所区分，以匹配各自对应的推理场景。
 
-\paragraph{（1）三类监督目标}
+\subsubsection{三类监督目标}
 同一训练集经不同脚本处理后形成三种监督目标（见表~\ref{tab:ch4-lora-target}），支撑 H4/H7/H9 三条训练路径；具体脚本与指针文件对应 4.1 节表~\ref{tab:ch4-matrix}。
 \begin{table}[!htb]
   \centering
@@ -20,7 +20,7 @@
   \end{tabular}
 \end{table}
 
-\paragraph{（2）Chat 样本结构}
+\subsubsection{Chat 样本结构}
 \begin{itemize}
     \item \textbf{消息条数}：\texttt{LoRA\_code} / \texttt{LoRA\_cot\_zs} 为 system + user + assistant 共 3 条；\texttt{LoRA\_cot\_fs($k$)} 为 $2{+}2k{+}2$ 条多轮消息（$k$ 组示范 + 当前题）；
     \item \textbf{角色分工}：system 固化角色；user 承载题面、函数签名与指令；assistant 承载监督目标；
@@ -28,7 +28,7 @@
     \item \textbf{相对 Direct 的 CoT 差异}：user 末尾追加 \texttt{Think step by step, then output the Python code.}；assistant 为「推理段 + 空行 + fenced Python」，与 4.4 节评测侧对 few-shot 示例的回放形态一致。
 \end{itemize}
 
-\paragraph{（3）Loss 掩码策略}
+\subsubsection{Loss 掩码策略}
 \begin{itemize}
     \item \textbf{动机}：loss 只应落在 assistant 段，避免在 system/user 上消耗容量或干扰指令跟随；
     \item \textbf{完整序列}：\texttt{apply\_chat\_template(messages, tokenize=True)} 得到完整 token 序列 $T$；
@@ -38,7 +38,7 @@
     \item \textbf{效果与实现收益}：梯度仅对最后一条 assistant 段反向传播；沿用 chat template 对特殊 token 的原生解释，避免手工拼接字符串带来的 tokenizer 不一致。
 \end{itemize}
 
-\paragraph{（4）Few-shot 训练样本的构造}
+\subsubsection{Few-shot 训练样本的构造}
 \texttt{LoRA\_cot\_fs($k$)} 独有环节：对每条目标样本 $q$，用 3.3.2 节定义的强标签集合派生 \texttt{strong\_tags}，在训练池中按下式评分：
 \[
 \text{score}(q, q') = 2\cdot |\mathrm{strong\_tags}(q) \cap \mathrm{strong\_tags}(q')| + |\mathrm{tags}(q) \cap \mathrm{tags}(q')|

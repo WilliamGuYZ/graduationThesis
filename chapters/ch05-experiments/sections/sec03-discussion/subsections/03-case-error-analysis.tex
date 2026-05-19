@@ -2,7 +2,7 @@
 
 5.3.1 与 5.3.2 从聚合指标刻画了方法层面的主效应与交互效应；本节从单题样本层面做失效归因，既对前述差分量提供解释性证据，也为 Ch1.4 研究目标 (4) 的「失效模式归因」落到实处。
 
-\paragraph{（1）失效模式分类}
+\subsubsection{失效模式分类}
 基于评测脚本记录的 stdout/stderr 与子进程退出码，对失败样本做如下四类划分：
 \begin{itemize}
     \item \textbf{逻辑错误（Logic）}：代码可执行但断言失败，覆盖边界判断错误、状态更新顺序错误等；
@@ -11,7 +11,7 @@
     \item \textbf{超时（Timeout）}：触发 \texttt{TIMEOUT=5} 秒上限，常见于深递归或错误的复杂度估计。
 \end{itemize}
 
-\paragraph{（2）典型样本对照}
+\subsubsection{典型样本对照}
 从评测集中选取三类典型样本，对比同题目在 H1 / H4 / H8 / H10 四种方法下的失败/通过情况：
 \begin{itemize}
     \item \textbf{样本 A：算法范式明确的单步问题}（如简单排序/查找）。基线 H1 即可稳定通过；LoRA 与 CoT 的边际贡献接近 0，用以验证「不难的题目不被方法差异放大」；
@@ -20,7 +20,7 @@
 \end{itemize}
 % TODO: 按实际评测产出的 JSON，挑选三个题目 id，补充原题摘录、模型输出摘录与对应失败类别。
 
-\paragraph{（3）CoT 推理段的典型失效}
+\subsubsection{CoT 推理段的典型失效}
 两阶段推理引入了新的失败来源，值得单列：
 \begin{itemize}
     \item \textbf{推理偷跑代码}：Stage-1 未到指令末尾便滑出 \verb|```python|，后续 Stage-2 拿到的上下文含不完整代码块——本文通过 4.4.1 节的 Stage-1 清洗规则阻断；若仍有漏网，则在此节记录发生率；
@@ -29,7 +29,7 @@
 \end{itemize}
 % TODO: 按评测结果统计三类 CoT 失败在 H2/H3/H5/H6/H8/H10 上的发生频次，交叉对比。
 
-\paragraph{（4）归因小结}
+\subsubsection{归因小结}
 案例层面的观察与 5.3.1、5.3.2 的聚合差分需要相互印证：
 \begin{itemize}
     \item 若聚合指标显示 LoRA 有效，案例层面应同时看到 Logic/Structural 类失败显著下降；

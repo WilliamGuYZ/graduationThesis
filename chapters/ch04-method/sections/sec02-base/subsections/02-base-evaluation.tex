@@ -2,10 +2,10 @@
 
 基线评测由 \texttt{evaluation/eval\_base\_passk.py} 实现，整体采用「批量生成 $\to$ 子进程隔离执行 $\to$ pass@k 汇总」三段式结构，对应 H1 全部产物。
 
-\paragraph{（1）数据加载与原始解答自检}
+\subsubsection{数据加载与原始解答自检}
 脚本读入 \texttt{data/processed/KodCode\_eval.jsonl} 全量评测集，对每条样本保留 \texttt{question}、\texttt{test}、\texttt{test\_info}、\texttt{solution} 四个字段。在生成任何模型输出之前，先用相同的执行器跑一遍数据集自带的 \texttt{solution}，得到「原始通过率」作为评测管道自检的上界：若自检率明显低于 100\%，说明数据或执行环境本身已有污染，后续模型指标无意义。
 
-\paragraph{（2）批量生成}
+\subsubsection{批量生成}
 每题按 4.2.1 节模板构造 prompt，复制 \texttt{NUM\_SAMPLES=10} 份入批，一次性交给 vLLM 完成全集推理：
 \begin{itemize}
     \item \textbf{批处理}：\texttt{llm.generate(all\_prompts, sampling\_params)} 将 $N \times 10$ 个请求一次送入，利用 PagedAttention 充分饱和单卡；
@@ -13,7 +13,7 @@
     \item \textbf{代码抽取}：生成文本先用正则 \verb|```python ... ```| 抽取第一段代码块，若缺失 \texttt{python} 语言标签则回退到无语言代码块，最后才回退到原始文本，保证既能吸收模型带解释的输出又不丢失纯代码输出。
 \end{itemize}
 
-\paragraph{（3）子进程隔离执行与超时}
+\subsubsection{子进程隔离执行与超时}
 每段候选代码与官方 \texttt{test} 组合后，\textbf{不在主进程内直接 \texttt{exec}}，而是启动一次独立的 Python 子进程，以 JSON 方式经 \texttt{stdin} 注入解答与单测，在子进程内调用 \texttt{scripts/validate\_code\_with\_test.py::test\_solution\_code} 断言并写回结果。该设计的意义有三：
 \begin{itemize}
     \item \textbf{超时隔离}：子进程外层包 \texttt{subprocess.run(timeout=TIMEOUT)}（\texttt{TIMEOUT=5} 秒），模型产出的死循环或无穷递归不会卡住评测主流程；
@@ -21,12 +21,12 @@
     \item \textbf{异常归因}：\texttt{stdout / stderr} 按退出码分支回传至主进程，超时单独计入 \texttt{timeout\_count}，便于后续失败归因。
 \end{itemize}
 
-\paragraph{（4）pass@k 汇总}
+\subsubsection{pass@k 汇总}
 设第 $i$ 题的 $n$ 次采样中有 $c_i$ 次通过断言，采用 Chen 等提出的无偏估计：
 \[
 \mathrm{pass@}k \;=\; \frac{1}{|\mathcal{D}|}\sum_{i \in \mathcal{D}}\!\left[\,1 - \binom{n-c_i}{k}\Big/\binom{n}{k}\,\right].
 \]
 本文固定 $n{=}10$、$k \in \{1,5,10\}$。仅对 $n$ 等于 \texttt{NUM\_SAMPLES} 的完整样本计入均值，避免异常短池样本拉低估计。
 
-\paragraph{（5）结果落盘}
+\subsubsection{结果落盘}
 评测结束后，除控制台打印三档 pass@k 外，还将 \texttt{timestamp / num\_problems / num\_samples / temperature / timeout / pass\_at\_k / original\_solution\_pass\_rate} 汇总为 JSON 写入 \texttt{evaluation/results/}。与 \texttt{scripts/train\_eval.sh} 对齐时，应使用 \texttt{--result-suffix h1\_base\_direct}，得到 \texttt{eval\_base\_passk\_h1\_base\_direct.json} 作为 H1 产物；若省略后缀则文件名退化为 \texttt{eval\_base\_passk.json}（易被后续运行覆盖）。该文件供第五章主效应与交互效应的差分计算直接读取。

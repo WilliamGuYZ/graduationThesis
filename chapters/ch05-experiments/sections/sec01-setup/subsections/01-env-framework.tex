@@ -2,7 +2,7 @@
 
 本章在第四章固定的方法口径下执行 H1--H10 共 10 组评测。为使结果差异主要反映训练侧与推理侧的方法因素，硬件档位、系统与依赖版本、训练与推理框架在全部 10 组间保持一致。
 
-\paragraph{（1）硬件与操作系统}
+\subsubsection{硬件与操作系统}
 \begin{itemize}
     \item \textbf{计算平台}：单机单卡 NVIDIA GPU；显存 $\geq 24$\,GB 用于覆盖 9B 基座的全量加载、LoRA 反向梯度与 vLLM 推理缓存；
     \item \textbf{操作系统}：Ubuntu 22.04 LTS；CUDA 12.x，匹配 PyTorch 与 vLLM 官方 wheel；
@@ -10,15 +10,15 @@
     \item \textbf{说明}：vLLM 仅支持 Linux，故训练与评测均在 Linux 服务器侧完成。
 \end{itemize}
 
-\paragraph{（2）基座模型与数值精度}
+\subsubsection{基座模型与数值精度}
 \begin{itemize}
     \item \textbf{基座}：CodeGeeX4-ALL-9B（\texttt{THUDM/codegeex4-all-9b}），H1--H10 共用同一份权重，不更换 checkpoint；
     \item \textbf{训练精度}：\texttt{bf16}，启用 \texttt{gradient\_checkpointing} 以降低激活显存；
     \item \textbf{推理精度}：vLLM 默认 \texttt{bf16}，PagedAttention 管理 KV cache。
 \end{itemize}
 
-\paragraph{（3）软件栈}
+\subsubsection{软件栈}
 训练侧使用 \texttt{PyTorch}、\texttt{transformers}、\texttt{peft}、\texttt{accelerate} 与 \texttt{datasets}，优化器为 \texttt{adamw\_torch}；推理侧使用 \texttt{vLLM} 加载基座并按需挂载 LoRA 适配器；候选代码的可执行性判定在独立 Python 子进程中完成，统一施加 5 秒超时隔离，避免错误样本阻塞批处理。各依赖的具体版本由仓库 \texttt{requirements.txt} 锁定。
 
-\paragraph{（4）训练—评测流水线}
+\subsubsection{训练—评测流水线}
 H1--H10 通过统一的 Bash 入口脚本串联两个阶段：训练阶段按需产出 \texttt{LoRA\_code}、\texttt{LoRA\_cot\_zs}、\texttt{LoRA\_cot\_fs($k$)} 三类适配器，并将各自最新落盘目录写入对应的指针文件；评测阶段依次调用 \texttt{eval\_base\_passk.py}、\texttt{eval\_lora\_passk.py} 与 \texttt{eval\_lora\_cot\_passk.py}，按 4.1 节表~\ref{tab:ch4-matrix} 的训练侧 $\times$ 推理侧组合读取相应指针并写入结果 JSON。该流水线保证 10 组结果在同一软硬件状态下产生，从而具备相互可比性。

@@ -8,4 +8,54 @@
     \item 与参数高效微调形成互补，实现“参数适配+推理引导”的协同增强。
 \end{itemize}
 
+图~\ref{fig:ch2-cot-comparison} 对比了直接生成（Direct）、零样本链式思维（CoT-ZS）与少样本链式思维（CoT-FS）三种推理结构在 prompt 组织上的核心差异：Direct 仅向模型传入题目本体并约束「只输出代码」；CoT-ZS 通过 system 指令显式触发分步推理后再生成代码；CoT-FS 在此基础上前置 $k$ 条「题目—推理—代码」示例，借助 in-context learning 进一步约束推理形态。三者在第四章对应推理侧三种 prompt 结构，与训练侧 LoRA 共同构成析因实验的两条独立维度。
+
+\begin{figure}[!htb]
+  \centering
+  \begin{tikzpicture}[
+    node distance=2.5mm and 5mm,
+    col/.style={draw, rounded corners=2pt, align=center, minimum width=34mm, font=\scriptsize, inner sep=2pt},
+    sysn/.style={col, fill=black!8, minimum height=6mm},
+    usrn/.style={col, fill=blue!8, minimum height=6mm},
+    asst/.style={col, fill=green!10, minimum height=6mm},
+    ex/.style={col, fill=orange!12, minimum height=5mm, font=\tiny},
+    arr/.style={-{Stealth[length=2mm]}, thick},
+    title/.style={font=\footnotesize\bfseries},
+  ]
+    % --- Direct ---
+    \node[title] (tD) {Direct};
+    \node[sysn, below=of tD] (sD) {System: expert programmer.\\ output only Python.};
+    \node[usrn, below=of sD] (uD) {User: 题目 + 「only output code」};
+    \node[asst, below=of uD] (aD) {Assistant: \texttt{```python ... ```}};
+    \draw[arr] (sD) -- (uD);
+    \draw[arr] (uD) -- (aD);
+
+    % --- CoT-ZS ---
+    \node[title, right=14mm of tD] (tZ) {CoT-ZS（两阶段）};
+    \node[sysn, below=of tZ] (sZ) {System: think step by step};
+    \node[usrn, below=of sZ] (uZ) {User: 题目 + 「step by step」};
+    \node[asst, below=of uZ] (rZ) {Stage-1: 推理步骤};
+    \node[asst, below=of rZ] (aZ) {Stage-2: 代码};
+    \draw[arr] (sZ) -- (uZ);
+    \draw[arr] (uZ) -- (rZ);
+    \draw[arr] (rZ) -- node[midway, right, font=\tiny]{回灌 reasoning} (aZ);
+
+    % --- CoT-FS ---
+    \node[title, right=14mm of tZ] (tF) {CoT-FS$(k)$（两阶段+示例）};
+    \node[sysn, below=of tF] (sF) {System: same as CoT-ZS};
+    \node[ex, below=of sF] (e1) {示例 1: 题目 → 推理+代码};
+    \node[ex, below=of e1] (eN) {$\cdots$ 示例 $k$};
+    \node[usrn, below=of eN] (uF) {User: 目标题};
+    \node[asst, below=of uF] (rF) {Stage-1: 推理};
+    \node[asst, below=of rF] (aF) {Stage-2: 代码};
+    \draw[arr] (sF) -- (e1);
+    \draw[arr] (e1) -- (eN);
+    \draw[arr] (eN) -- (uF);
+    \draw[arr] (uF) -- (rF);
+    \draw[arr] (rF) -- (aF);
+  \end{tikzpicture}
+  \caption{三种推理侧 prompt 结构对比：Direct 单阶段直出代码；CoT-ZS 通过 system 指令触发两阶段推理；CoT-FS 在 CoT-ZS 基础上前置 $k$ 条示例}
+  \label{fig:ch2-cot-comparison}
+\end{figure}
+
 在面向算法题的代码生成任务中，CoT 不仅能提升可执行正确率，还能让模型行为更可控、更易解释，是提升复杂场景稳定性的关键技术，也构成本文的核心研究内容之一。
