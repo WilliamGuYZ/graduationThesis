@@ -5,7 +5,7 @@
 \subsubsection{训练产出与指针文件}
 每次训练结束时，脚本会做两件与评测对接直接相关的事：
 \begin{itemize}
-    \item 在 \texttt{train/outputs/} 下生成带时间戳的适配器目录，内含 \texttt{adapter\_model.safetensors}、\texttt{adapter\_config.json} 与与基座对齐的 \texttt{tokenizer*} 文件；
+    \item 在 \texttt{train/outputs/} 下生成带时间戳的适配器目录，内含 \texttt{adapter\_model.safetensors}、\texttt{adapter\_config.json}，以及与基座对齐的 \texttt{tokenizer*} 文件；
     \item 将该绝对路径单行写入对应指针文件——\texttt{train.py} 写 \texttt{latest\_lora\_adapter.txt}，\texttt{train\_cot.py --num-few-shots 0} 写 \texttt{latest\_lora\_cot\_zs\_adapter.txt}，\texttt{train\_cot.py --num-few-shots $k$} 写 \texttt{latest\_lora\_cot\_fs\{k\}\_adapter.txt}。
 \end{itemize}
 指针文件与最新适配器路径一一对应：评测脚本若未通过 \texttt{--lora-path} 显式传入路径，则 fallback 读取本脚本默认的指针文件，据此决定此次评测挂载哪份适配器。该解耦使得重训后无需改评测脚本，而显式传参又允许 H5/H6/H7/H9 等跨脚本挂载场景（如 CoT 评测脚本挂 \texttt{LoRA\_code} 适配器以跑 H5/H6）。
