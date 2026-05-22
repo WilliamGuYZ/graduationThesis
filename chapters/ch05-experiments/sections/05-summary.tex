@@ -1,12 +1,11 @@
 % Section 5.5: 本章小结
 
-本章在第四章方法口径下，按「设置 $\to$ 结果 $\to$ 分析 $\to$ 消融」四段依次推进，得到以下实证结论：
+本章在第四章方法口径下，按「设置 $\to$ 结果 $\to$ 分析」三段依次推进，得到以下实证结论：
 \begin{itemize}
     \item \textbf{训练侧主效应}：以 H1 为共同基线，$\{$H4, H7, H9$\}$ 分别给出纯代码 LoRA、CoT 监督 LoRA、含 few-shot 的 CoT 监督 LoRA 在 Direct 推理下的增益，三者共同刻画了 LoRA 在本任务上的有效性边界；
     \item \textbf{推理侧主效应}：H2 / H3 相对 H1 的差分量化了零示例/含示例 CoT 推理对基座的独立贡献，H3 − H2 单独给出 few-shot 在基座上的边际增益；
     \item \textbf{训练 $\times$ 推理交互}：四条 difference-in-differences（分别基于 H7/H8、H9/H10、H4/H5、H4/H6）对「LoRA 与 CoT 是否正交可加」给出判据，落入「正交 / LoRA 放大 CoT / LoRA 吸收 CoT」三种情形之一；
     \item \textbf{few-shot 一致性}：H3 − H2 与 H6 − H5 的符号与量级一致性判断 few-shot 是否为训练侧无关的结构性增益；H10 − H8 单列 $k$ 匹配时的 CoT 净收益；
-    \item \textbf{鲁棒性兜底}：消融实验从关键超参数、随机性、长度预算三个维度确认上述聚合结论不被单一扰动源主导；案例分析从 Logic / Structural / Runtime / Timeout 四类失效模式层面与聚合差分互为印证。
 \end{itemize}
 
 % TODO: 所有「具体数值」「符号方向」「定性判定」均待 H1--H10 全部跑完后统一回填；
