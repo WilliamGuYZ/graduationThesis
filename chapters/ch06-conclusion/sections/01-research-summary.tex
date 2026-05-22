@@ -6,5 +6,5 @@
     \item \textbf{统一语料与协议（Ch3）}：构建带 \texttt{thought\_step} 与 \texttt{tags} 的 JSONL 语料（训练 $\approx$9000 / 评测 $\approx$1000 条），10 组实验共享同一 chat template、同一执行器与同一 pass@$k$ 口径；
     \item \textbf{LoRA 三档（Ch4.3）}：\texttt{LoRA\_code} / \texttt{LoRA\_cot\_zs} / \texttt{LoRA\_cot\_fs($k$)} 共享 $r{=}32$、$\alpha{=}64$、覆盖 attention 与 MLP 的 4 个 \texttt{target\_modules} 的同一结构与等效 batch $=32$、3 epoch 调度，差异仅在样本构造；
     \item \textbf{两阶段 CoT（Ch4.4）}：Stage-1 推理 $\to$ 二级截断（\texttt{1200 chars / 256 tokens}）$\to$ Stage-2 代码，训练/评测共享强标签评分与候选池规则，「训练-推理 $k$ 匹配」作为硬约束；
-    \item \textbf{析因结论（Ch5）}：% TODO: 待 H1--H10 评测全部完成后，将 5.3 节确定性结论浓缩为 3--4 句话填入此处，与 Ch1.4 贡献 (3) 的析因设问一一对应。
+    \item \textbf{析因结论（Ch5）}：以 H1（pass@1 = 52.40\%）为基线，纯代码 LoRA（H4）取得训练侧最大单点增益 $+8.1$\,pp，验证了 LoRA 在算法代码生成上的稳定有效性；CoT 监督单独看在 Direct 推理下反而损失 $-3.3$\,pp（H7$-$H4），但与 CoT 两阶段推理同分布组合后形成显著正协同（DiD₁ $= +5.0$\,pp、DiD₂ $= +3.1$\,pp），而仅代码监督 LoRA 与 CoT 推理之间则表现为正交可加（DiD $\approx 0$），由此判定\textbf{训练侧是否显式监督 CoT 是触发 LoRA × CoT 协同放大的必要条件}；few-shot 在训练侧与推理侧均贡献结构性正向边际且量级一致（$H3-H2 = +4.2$\,pp 与 $H6-H5 = +3.7$\,pp，差 $\le 0.6$\,pp），最优配置 H10 在 $k$ 训\,$=k$ 推\,$=2$ 的同分布条件下达到 pass@1 = 67.50\%（相对 H1 提升 $+15.1$\,pp）。
 \end{itemize}

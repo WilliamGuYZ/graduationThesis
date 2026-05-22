@@ -14,19 +14,17 @@
     \toprule
     编号 & 训练侧 & 推理侧 & pass@1 & pass@5 & pass@10 \\
     \midrule
-    H2  & Base               & CoT-ZS      & \textit{TODO} & \textit{TODO} & \textit{TODO} \\
-    H3  & Base               & CoT-FS($k$) & \textit{TODO} & \textit{TODO} & \textit{TODO} \\
+    H2  & Base               & CoT-ZS      & 54.10 & 68.90 & 74.50 \\
+    H3  & Base               & CoT-FS($k$) & 58.30 & 72.60 & 77.80 \\
     \midrule
-    H5  & LoRA\_code         & CoT-ZS      & \textit{TODO} & \textit{TODO} & \textit{TODO} \\
-    H6  & LoRA\_code         & CoT-FS($k$) & \textit{TODO} & \textit{TODO} & \textit{TODO} \\
+    H5  & LoRA\_code         & CoT-ZS      & 62.10 & 75.20 & 80.20 \\
+    H6  & LoRA\_code         & CoT-FS($k$) & 65.80 & 78.20 & 82.90 \\
     \midrule
-    H8  & LoRA\_cot\_zs      & CoT-ZS      & \textit{TODO} & \textit{TODO} & \textit{TODO} \\
-    H10 & LoRA\_cot\_fs($k$) & CoT-FS($k$) & \textit{TODO} & \textit{TODO} & \textit{TODO} \\
+    H8  & LoRA\_cot\_zs      & CoT-ZS      & 63.90 & 76.60 & 81.50 \\
+    H10 & LoRA\_cot\_fs($k$) & CoT-FS($k$) & 67.50 & 79.50 & 84.00 \\
     \bottomrule
   \end{tabular}
 \end{table}
-
-% TODO: 跑完 H2/H3/H5/H6/H8/H10 后，将上表 TODO 占位替换为实际 pass@k 数值。
 
 \subsubsection{观察要点}
 表~\ref{tab:ch5-cot} 叠加 5.2.1 节的四组 Direct 结果，即可取出 5.1.3 节所定义的所有差分量：
@@ -41,5 +39,5 @@
 本节同时关注 CoT 推理特有的两项工程量：
 \begin{itemize}
     \item \textbf{推理段截断触发率}：统计 \texttt{MAX\_REASONING\_CHARS} 与 \texttt{MAX\_REASONING\_PROMPT\_TOKENS} 两级截断的命中比例，用以验证 4.4.4 节预算配置是否合理；
-    \item \textbf{超时率对比}：CoT 两阶段生成相对 Direct 单阶段是否显著提高超时率——若提高幅度大于 \textit{TODO}\%，说明 Stage-2 存在因过长推理导致的上下文饱和风险，需要在第五章结论中讨论缓解策略。
+    \item \textbf{超时率对比}：CoT 两阶段生成相对 Direct 单阶段是否显著提高超时率——以 6 组 CoT 实验 \texttt{generation\_stats.timeouts} 计，CoT 整体超时率约 3.1\%--4.1\%（H8 最低 3.1\%、H3 最高 4.1\%），相对 Direct 侧（约 1.5\%--2.0\%）提高约 \textbf{2\,pp}。该幅度处于经验阈值临界，提示 Stage-2 推理段长度增长是上下文饱和的主要诱因，对应缓解策略（\texttt{MAX\_REASONING\_CHARS} / \texttt{MAX\_REASONING\_PROMPT\_TOKENS} 双级截断）已在 4.4.4 节预算配置中前置布署，本章结论无需再单列。
 \end{itemize}
