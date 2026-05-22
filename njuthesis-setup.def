@@ -11,12 +11,12 @@
 % info 类用于录入个人信息
 %   带*号的为对应英文字段
 \njusetup[info]{
-    title = {基于大语言模型的\\算法代码生成模型},
+    title = {基于 CodeGeeX4-ALL-9B 的\\算法代码生成模型},
     % 中文题目
     % 直接填写标题就是自动换行
     % 可以使用换行控制符(\\)手动指定换行位置
     %
-    title* = {Research and Implement of Algorithm Code Generation Based on Instruction Fine-tuning of Large Language Models},
+    title* = {Research and Implementation of Algorithm Code Generation Based on CodeGeeX4-ALL-9B},
     % 英文题目
     %
     author = {谷雨泽},
@@ -26,11 +26,11 @@
     % 作者英文姓名
     % 一般使用拼音
     %
-    keywords = {代码生成,大语言模型,LoRA微调,思维链},
+    keywords = {算法代码生成,大语言模型,LoRA微调,思维链,析因实验,少样本提示},
     % 中文关键词列表
     % 使用英文半角逗号(,)分隔
     %
-    keywords* = {Code Generation,Large Language Model,LoRA Fine-tuning,Chain-of-Thought},
+    keywords* = {Algorithmic Code Generation,Large Language Model,LoRA Fine-tuning,Chain-of-Thought,Factorial Design,Few-shot Prompting},
     % 英文关键词
     % 使用英文半角逗号(,)分隔
     %
