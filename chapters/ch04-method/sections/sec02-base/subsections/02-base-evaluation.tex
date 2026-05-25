@@ -14,12 +14,7 @@
 \end{itemize}
 
 \subsubsection{子进程隔离执行与超时}
-每段候选代码与官方 \texttt{test} 组合后，\textbf{不在主进程内直接 \texttt{exec}}，而是启动一次独立的 Python 子进程，以 JSON 方式经 \texttt{stdin} 注入解答与单测，在子进程内调用 \texttt{scripts/validate\_code\_with\_test.py::test\_solution\_code} 断言并写回结果。该设计的意义有三：
-\begin{itemize}
-    \item \textbf{超时隔离}：子进程外层包 \texttt{subprocess.run(timeout=TIMEOUT)}（\texttt{TIMEOUT=5} 秒），模型产出的死循环或无穷递归不会卡住评测主流程；
-    \item \textbf{内存隔离}：子进程退出即释放所有全局状态，避免多次 \texttt{exec} 导致的命名污染与 \texttt{sys.modules} 残留；
-    \item \textbf{异常归因}：\texttt{stdout / stderr} 按退出码分支回传至主进程，超时单独计入 \texttt{timeout\_count}，便于后续失败归因。
-\end{itemize}
+每段候选代码与官方单测组合后，由独立子进程执行并设置秒级超时，以同时实现超时、内存与异常的三重隔离：模型产出的死循环或无穷递归不会卡住评测主流程，多次执行也不会在主进程内造成命名污染。
 
 \subsubsection{pass@k 汇总}
 设第 $i$ 题的 $n$ 次采样中有 $c_i$ 次通过断言，采用 Chen 等提出的无偏估计：

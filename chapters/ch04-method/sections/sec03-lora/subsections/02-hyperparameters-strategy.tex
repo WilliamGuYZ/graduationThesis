@@ -1,59 +1,11 @@
 % Subsection 4.3.2: 超参数与训练策略
 
-三种适配器共用同一套超参数，仅在样本构造层面不同（4.3.1 节）。超参数分为 LoRA 结构、优化器、数值精度三组，取值依据见表后说明。
-
-\subsubsection{LoRA 结构超参数}
-LoRA 结构相关超参数取值如表~\ref{tab:ch4-lora-struct} 所示。
-\begin{table}[!htb]
-  \centering
-  \caption{LoRA 结构配置}
-  \label{tab:ch4-lora-struct}
-  \footnotesize
-  \begin{tabular}{lll}
-    \toprule
-    超参数 & 取值 & 说明 \\
-    \midrule
-    \texttt{r}              & 32 & 低秩分解秩，兼顾容量与显存 \\
-    \texttt{lora\_alpha}    & 64 & 缩放系数，有效学习率 $\approx \alpha / r = 2$ \\
-    \texttt{lora\_dropout}  & 0.1 & 训练时的正则化，降低过拟合 \\
-    \texttt{bias}           & \texttt{"none"} & 不训练偏置，仅训练 LoRA A/B 矩阵 \\
-    \texttt{target\_modules} & \footnotesize\ttfamily query\_key\_value, dense, dense\_h\_to\_4h, dense\_4h\_to\_h & ChatGLM/CodeGeeX4 架构下 attention 与 MLP 线性层 \\
-    \texttt{task\_type}     & \texttt{CAUSAL\_LM} & 自回归语言建模 \\
-    \bottomrule
-  \end{tabular}
-\end{table}
-将 LoRA 注入 ChatGLM 块中的 \texttt{query\_key\_value}（融合 QKV）、注意力输出 \texttt{dense} 以及 MLP 两侧 \texttt{dense\_h\_to\_4h}、\texttt{dense\_4h\_to\_h}，使 CoT 推理段与代码段在参数侧均可获得适配空间，这一点在 \texttt{LoRA\_cot\_*} 的监督目标下尤为关键。
-
-\subsubsection{优化器与调度}
-\begin{table}[!htb]
-  \centering
-  \caption{优化器、学习率调度与数值精度}
-  \label{tab:ch4-lora-optim}
-  \footnotesize
-  \begin{tabular}{lll}
-    \toprule
-    超参数 & 取值 & 说明 \\
-    \midrule
-    \texttt{per\_device\_train\_batch\_size} & 1  & 单卡 batch；9B 基座 + LoRA + bf16 + gradient\_checkpointing 在 32GB 单卡上必须取 1，否则反向传播阶段直接 OOM \\
-    \texttt{gradient\_accumulation\_steps}  & 32 & 等效 batch size $= 1 \times 32 = 32$ \\
-    \texttt{learning\_rate}                 & 2e-5 & LoRA 常用区间偏低端，稳定优先 \\
-    \texttt{num\_train\_epochs}             & 3  & 与训练集规模（$\approx$9000 条）匹配 \\
-    \texttt{warmup\_ratio}                  & 0.03 & 前 3\% 步做线性 warmup \\
-    \texttt{weight\_decay}                  & 0.01 & 对非 bias / LayerNorm 参数 \\
-    \texttt{lr\_scheduler\_type}            & \texttt{cosine} & warmup 后余弦退火 \\
-    \texttt{optim}                          & \texttt{adamw\_torch} & 标准 AdamW \\
-    \texttt{bf16}                           & \texttt{True} & 数值精度，兼顾速度与稳定 \\
-    \texttt{gradient\_checkpointing}        & \texttt{True} & 以时间换显存，匹配当前基座规模（约 9B 参数） \\
-    \texttt{seed}                           & 42 & 训练侧全局种子 \\
-    \bottomrule
-  \end{tabular}
-\end{table}
+三种适配器共用同一套超参数，仅在样本构造层面不同（4.3.1 节）。LoRA 结构上取秩 $r=32$、缩放系数 $\alpha=64$（有效学习率 $\alpha/r=2$），并将适配层注入 ChatGLM 块中的 attention（融合 QKV 与输出）与 MLP 两侧线性层共四类位置，使 CoT 推理段与代码段在参数侧均可获得适配空间——这一点在 \texttt{LoRA\_cot\_*} 的监督目标下尤为关键。优化器侧采用 AdamW 配 cosine 调度（含约 3\% 步的线性 warmup）、bf16 数值精度与 gradient\_checkpointing 以匹配 9B 基座 + 32GB 单卡的显存预算；训练 3 个 epoch、等效 batch size 为 32，与训练集规模（约 9000 条）匹配，足以让 LoRA 收敛而不在 CoT 监督目标上过拟合。具体超参取值在仓库 \texttt{SETUP.md} 中以表格形式给出。
 
 \subsubsection{设计依据与一致性约束}
-上述两张表的取值遵循以下四条原则，使得 10 组实验之间仅因训练样本构造差异而产生可解释的指标变化：
+上述取值遵循以下三条原则，使得 10 组实验之间仅因训练样本构造差异而产生可解释的指标变化：
 \begin{itemize}
-    \item \textbf{跨适配器一致}：三种 LoRA 共享完全相同的结构与优化器超参，仅 \texttt{train\_cot.py} 多出 \texttt{--num-few-shots} 与可选 \texttt{--max-length} 等命令行分支；
+    \item \textbf{跨适配器一致}：三种 LoRA 共享完全相同的结构与优化器超参，仅在样本构造与示例条数 $k$ 上有差异；
     \item \textbf{与推理侧一致}：\texttt{LoRA\_code} 路径的 chat 模板与 4.2.1 节 Direct 推理对齐；\texttt{LoRA\_cot\_*} 路径的用户指令与 assistant 形态与 4.4 节 CoT 推理（含 few-shot 回放）对齐，避免特殊 token 或围栏格式在 train/test 间错位；
-    \item \textbf{与数据规模匹配}：$3$ epoch $\times$ 等效 batch size 32 在 $\approx$9000 训练样本上约合 $\approx$850 次 optimizer step，足以让 LoRA 收敛而不至于在 CoT 监督目标上过拟合；
-    \item \textbf{可复现与弱依赖}：训练脚本将 \texttt{report\_to} 设为 \texttt{none}，不依赖 TensorBoard 即可运行；默认截断长度为 \texttt{train.py} 中 \texttt{MAX\_LENGTH=1024}、\texttt{train\_cot.py} 中 \texttt{MAX\_LENGTH=2048}，若需与表~\ref{tab:ch4-lora-optim} 以外取值对齐实验，可通过 \texttt{--max-length} 显式传入并在落盘 \texttt{config.json} 中留痕。
+    \item \textbf{与数据规模匹配}：3 epoch 与等效 batch size 在 KodCode 训练集上约合数百次 optimizer step，足以让 LoRA 收敛而不至于过拟合。
 \end{itemize}

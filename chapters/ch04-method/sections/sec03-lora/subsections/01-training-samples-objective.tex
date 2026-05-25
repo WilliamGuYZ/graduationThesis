@@ -29,14 +29,7 @@
 \end{itemize}
 
 \subsubsection{Loss 掩码策略}
-\begin{itemize}
-    \item \textbf{动机}：loss 只应落在 assistant 段，避免在 system/user 上消耗容量或干扰指令跟随；
-    \item \textbf{完整序列}：\texttt{apply\_chat\_template(messages, tokenize=True)} 得到完整 token 序列 $T$；
-    \item \textbf{非 assistant 前缀}：\texttt{apply\_chat\_template(messages[:-1], add\_generation\_prompt=True)} 得到截至 assistant 起始标记的前缀 $P$；
-    \item \textbf{掩码对齐}：比较 $T$ 与 $P$ 的公共前缀长度 $L$，令 \texttt{labels[:L] = -100}，其余位置保留原 token id；
-    \item \textbf{长度约束}：\texttt{train/train.py}（\texttt{LoRA\_code}）固定 \texttt{MAX\_LENGTH=1024}；\texttt{train/train\_cot.py}（\texttt{LoRA\_cot\_*}）固定 \texttt{MAX\_LENGTH=2048}，以兼顾 CoT 监督目标段的完整保留与 32GB 单卡显存上限，避免 few-shot + CoT 在 4096 长度下出现反向传播阶段的 OOM；
-    \item \textbf{效果与实现收益}：梯度仅对最后一条 assistant 段反向传播；沿用 chat template 对特殊 token 的原生解释，避免手工拼接字符串带来的 tokenizer 不一致。
-\end{itemize}
+为避免在 system/user 段上消耗模型容量或干扰指令跟随，loss 仅在最后一条 assistant 回复上反向传播：通过对完整序列与去除目标回复的前缀进行对齐定位 assistant 起点，将其之前的位置全部置为忽略标记。该实现沿用基座自带的 chat template 来解释特殊 token，避免手工拼接字符串带来的 tokenizer 不一致。序列长度上限按 LoRA\_code 与 LoRA\_cot\_* 两类适配器分别设置，以兼顾 CoT 监督目标段的完整保留与单卡显存预算。
 
 \subsubsection{Few-shot 训练样本的构造}
 \texttt{LoRA\_cot\_fs($k$)} 独有环节：对每条目标样本 $q$，用 3.3.2 节定义的强标签集合派生 \texttt{strong\_tags}，在训练池中按下式评分：
@@ -47,6 +40,6 @@
     \item \textbf{候选池}：取得分最高的前 $\max(k, 4k)$ 条；
     \item \textbf{抽样}：\texttt{random.sample} 从中抽 $k$ 条，以 User$\rightarrow$Assistant 轮次插在目标题之前，形成 \texttt{(题目, 推理, 代码)} 示范序列；
     \item \textbf{与评测对齐}：与 4.4.2 节评测侧检索共享同一评分与强标签集合；
-    \item \textbf{随机性差异}：训练为全局 RNG；评测为 \texttt{seed = 2026 + problem\_idx * 1000 + sample\_idx}，保证可复现；
+    \item \textbf{随机性差异}：训练为全局 RNG；评测侧 seed 由题号与采样编号确定性派生，保证逐条可复现；
     \item \textbf{目的}：train/test 在上下文统计上对齐，同时评测结果可被第三方复核。
 \end{itemize}

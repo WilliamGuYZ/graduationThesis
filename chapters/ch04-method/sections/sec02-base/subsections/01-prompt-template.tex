@@ -6,25 +6,20 @@
 基座为 Instruct 化模型，因此直接复用其官方 chat template：system 消息固化「\texttt{expert Python programmer}」角色定位，user 消息以 \texttt{Implement the function `\{func\_name\}'...} 句式承载题面与函数签名约束并以「Only output the Python code, no explanation.」收束，随后由 \texttt{apply\_chat\_template(add\_generation\_prompt=True)} 拼出最终输入序列。\texttt{func\_name} 与 \texttt{params} 从 3.1 节 \texttt{test\_info[0]} 的 \texttt{function\_name}、\texttt{parameter\_list} 字段直接取出，与评测时调用的被测函数同名同参，杜绝因函数名漂移导致的断言失败；逐字模板见附录~\ref{appendix:prompts}~A.2.1。
 
 \subsubsection{生成采样参数}
-基线的采样配置面向 pass@k 评测而非贪心解码，参数取值见表~\ref{tab:ch4-base-sampling}；\texttt{temperature} 取 0.3 以兼顾多样性与正确率，\texttt{top\_p/top\_k} 截断与 \texttt{NUM\_SAMPLES=10} 共同决定了可估计到 pass@10 的最小采样规模。
+基线的采样配置面向 pass@k 评测而非贪心解码，关键参数见表~\ref{tab:ch4-base-sampling}：温度取低值以兼顾多样性与正确率，每题采样次数共同决定了可估计到 pass@10 的最小采样规模；其余采样细节（核采样阈值、候选截断、停止符等）取常用默认值，详见仓库实现。
 
 \begin{table}[!htb]
   \centering
-  \caption{基线 Direct 推理的生成采样参数}
+  \caption{基线 Direct 推理的关键生成采样参数}
   \label{tab:ch4-base-sampling}
   \footnotesize
   \begin{tabular}{llp{6.8cm}}
     \toprule
     参数 & 取值 & 说明 \\
     \midrule
-    \texttt{NUM\_SAMPLES}  & 10   & 每题采样数，同时支撑 pass@1/5/10 的无偏估计 \\
-    \texttt{TEMPERATURE}   & 0.3  & 低温鼓励稳定输出，避免 pass@1 被随机性淹没 \\
-    \texttt{top\_p}        & 0.95 & 核采样阈值 \\
-    \texttt{top\_k}        & 50   & 候选截断 \\
-    \texttt{MAX\_TOKENS}   & 1024 & 单次生成上限，兼顾长解答与显存 \\
-    \texttt{stop}          & \texttt{None} & 不设显式停止符，依赖 EOS 终止 \\
-    \texttt{max\_model\_len} & 2048 & vLLM 上下文窗口，覆盖 prompt + 生成 \\
-    \texttt{gpu\_mem\_util}  & 0.9  & vLLM 显存预占比例 \\
+    每题采样数         & 10   & 同时支撑 pass@1/5/10 的无偏估计 \\
+    温度（temperature） & 0.3  & 低温鼓励稳定输出，避免 pass@1 被随机性淹没 \\
+    单次生成上限       & 1024 & 兼顾长解答与显存 \\
     \bottomrule
   \end{tabular}
 \end{table}

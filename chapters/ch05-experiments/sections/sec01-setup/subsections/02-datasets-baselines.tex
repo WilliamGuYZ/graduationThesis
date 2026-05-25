@@ -15,10 +15,10 @@
 \subsubsection{固定变量清单}
 为让 10 组指标差异可归因到方法本身，以下变量在全部实验中固定不变：
 \begin{itemize}
-    \item \textbf{基座权重}、\textbf{tokenizer}、\textbf{chat template}、\textbf{bf16 精度}；
+    \item \textbf{基座权重}、\textbf{tokenizer}、\textbf{chat template}、\textbf{数值精度}；
     \item \textbf{评测集}：同一份 \texttt{KodCode\_eval.jsonl}，不做抽样、不做重排；
-    \item \textbf{采样参数}：\texttt{NUM\_SAMPLES=10}、\texttt{TEMPERATURE=0.3}、\texttt{top\_p=0.95}、\texttt{top\_k=50}；
-    \item \textbf{执行环境}：同一子进程执行器、\texttt{TIMEOUT=5} 秒、同一 Python 解释器路径；
-    \item \textbf{few-shot 检索}：强标签集合、评分函数、评测侧 seed 派生方式。
+    \item \textbf{采样配置}：每题采样数、温度与生成上限均固定；
+    \item \textbf{执行环境}：同一子进程执行器与执行超时阈值；
+    \item \textbf{few-shot 检索}：强标签集合、评分函数与评测侧 seed 派生方式。
 \end{itemize}
 其余所有变量——训练侧适配器种类、推理侧 prompt 结构、few-shot 示例数 $k$——均严格落入 4.1 节矩阵给定的取值，不做 grid 扩展。

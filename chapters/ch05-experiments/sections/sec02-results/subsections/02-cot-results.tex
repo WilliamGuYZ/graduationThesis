@@ -38,6 +38,6 @@
 \subsubsection{辅助观测量}
 本节同时关注 CoT 推理特有的两项工程量：
 \begin{itemize}
-    \item \textbf{推理段截断触发率}：统计 \texttt{MAX\_REASONING\_CHARS} 与 \texttt{MAX\_REASONING\_PROMPT\_TOKENS} 两级截断的命中比例，用以验证 4.4.4 节预算配置是否合理；
-    \item \textbf{超时率对比}：CoT 两阶段生成相对 Direct 单阶段是否显著提高超时率——以 6 组 CoT 实验 \texttt{generation\_stats.timeouts} 计，CoT 整体超时率约 3.1\%--4.1\%（H8 最低 3.1\%、H3 最高 4.1\%），相对 Direct 侧（约 1.5\%--2.0\%）提高约 \textbf{2\,pp}。该幅度处于经验阈值临界，提示 Stage-2 推理段长度增长是上下文饱和的主要诱因，对应缓解策略（\texttt{MAX\_REASONING\_CHARS} / \texttt{MAX\_REASONING\_PROMPT\_TOKENS} 双级截断）已在 4.4.4 节预算配置中前置布署，本章结论无需再单列。
+    \item \textbf{推理段截断触发率}：统计两级截断的命中比例，用以验证 4.4.1 节预算配置是否合理；
+    \item \textbf{超时率对比}：CoT 两阶段生成相对 Direct 单阶段是否显著提高超时率——以 6 组 CoT 实验记录的超时计数计，CoT 整体超时率约 3.1\%--4.1\%（H8 最低 3.1\%、H3 最高 4.1\%），相对 Direct 侧（约 1.5\%--2.0\%）提高约 \textbf{2\,pp}。该幅度处于经验阈值临界，提示 Stage-2 推理段长度增长是上下文饱和的主要诱因，对应缓解策略（推理段二级截断）已在 4.4.1 节预算配置中前置布署，本章结论无需再单列。
 \end{itemize}

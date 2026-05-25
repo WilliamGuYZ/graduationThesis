@@ -22,27 +22,14 @@ Few-shot CoT（CoT-FS($k$)）在 CoT-ZS 基础上的要点如下：
 \end{itemize}
 
 \subsubsection{训练/评测两侧的随机性差异}
-\begin{itemize}
-    \item \textbf{共同点}：两侧共用同一评分函数与同一强标签集合，差异仅在随机采样；
-    \item \textbf{训练侧}：\texttt{random.sample(pool, k)}，依赖 \texttt{seed=42} 的全局 RNG，每个 epoch 的示例在统计上来自同一分布；
-    \item \textbf{评测侧}：\texttt{seed = 2026 + problem\_idx * 1000 + sample\_idx}，同一 \texttt{(题目, 采样编号)} 的示例选择完全可复现，便于跨实验、跨运行做差分归因；
-    \item \textbf{合取含义}：训练与评测在「评分 + 候选池构造」上统计一致；评测侧因固定 seed，任意第三方可按题号与采样编号逐条复核。
-\end{itemize}
+两侧共用同一评分函数与同一强标签集合，差异仅在随机采样：训练侧使用全局 RNG，每个 epoch 的示例在统计上来自同一分布；评测侧将 seed 派生为题号与采样编号的确定性函数，同一 \texttt{(题目, 采样编号)} 的示例选择完全可复现，任意第三方可按此逐条复核。该设计保证训练与评测在「评分 + 候选池构造」上统计一致，同时让评测结果可被外部复现。
 
 \subsubsection{示例拼接与预算分配}
-\begin{itemize}
-    \item \textbf{多轮形态}：$k$ 条示例在 Stage-1 与 Stage-2 中均为「\textbf{User（CoT 版题目指令）} $\rightarrow$ \textbf{Assistant（推理 + fenced Python）}」，置于目标轮次之前（与 4.1 节（1b）一致），再接目标题 User 或 \texttt{Reasoning:} 综合 User；
-    \item \textbf{三类长度预算}（两阶段 prompt 共享）：
-    \begin{itemize}
-        \item 示例推理保持原文，不在此阶段额外截断（长度由数据生成阶段约束）；
-        \item 目标题的 Stage-1 输出仍受 \texttt{MAX\_REASONING\_CHARS} 与 \texttt{MAX\_REASONING\_PROMPT\_TOKENS} 二级截断；
-        \item \texttt{VLLM\_MAX\_MODEL\_LEN=8192} 覆盖「全部示例 + 目标题 + 两阶段生成」。
-    \end{itemize}
-\end{itemize}
+$k$ 条示例在 Stage-1 与 Stage-2 中均以「\textbf{User（CoT 版题目指令）} $\rightarrow$ \textbf{Assistant（推理 + fenced Python）}」的多轮形态置于目标轮次之前（与 4.1 节（1b）一致）。长度预算上，示例推理保持原文不再截断（其长度已在数据生成阶段约束），仅对目标题的 Stage-1 输出做二级截断；vLLM 上下文窗口相应放宽，覆盖「全部示例 + 目标题 + 两阶段生成」。
 
 \subsubsection{训练/推理 $k$ 匹配的强约束}
 \begin{itemize}
-    \item \textbf{规则来源}：4.1 节合法性约束；训练侧为 \texttt{LoRA\_cot\_fs($k$)} 时，推理 \texttt{--few-shot-k} 必须同为 $k$；
-    \item \textbf{脚本行为}：不匹配时评测脚本显式退出（H10 对应 \texttt{FS\_K}）；
+    \item \textbf{规则来源}：4.1 节合法性约束；训练侧为 \texttt{LoRA\_cot\_fs($k$)} 时，推理侧 few-shot 条数必须同为 $k$；
+    \item \textbf{脚本行为}：不匹配时评测脚本显式退出，从工程层面阻止误用；
     \item \textbf{归因意义}：保证「训练见 $k$ 例、评测亦见 $k$ 例」，是 few-shot 净效应可比的前提；否则 train/test 在上下文长度与示例密度上错位，会混淆训练侧与推理侧贡献。
 \end{itemize}

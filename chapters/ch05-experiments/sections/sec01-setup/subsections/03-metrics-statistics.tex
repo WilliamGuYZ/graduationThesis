@@ -5,7 +5,7 @@
 \[
 \mathrm{pass@}k \;=\; \frac{1}{|\mathcal{D}|}\sum_{i \in \mathcal{D}}\!\left[\,1 - \binom{n-c_i}{k}\Big/\binom{n}{k}\,\right],
 \]
-其中 $n{=}\texttt{NUM\_SAMPLES}{=}10$ 为每题采样数，$c_i$ 为第 $i$ 题通过官方单测的候选数，$\mathcal{D}$ 为评测集中满足 $n_i{=}n$ 的题集。本章固定报告 $k \in \{1, 5, 10\}$ 三档：pass@1 反映单次采样正确率、pass@5 反映「是否有思路」、pass@10 反映「是否在采样预算内可达」。
+其中 $n$ 为每题采样数，$c_i$ 为第 $i$ 题通过官方单测的候选数，$\mathcal{D}$ 为评测集中达到完整采样数的题集。本章固定报告 $k \in \{1, 5, 10\}$ 三档：pass@1 反映单次采样正确率、pass@5 反映「是否有思路」、pass@10 反映「是否在采样预算内可达」。
 
 \subsubsection{差分口径}
 第 5.3 节所有分析均在 pass@$k$ 层面做差分：
@@ -27,9 +27,9 @@
 \end{itemize}
 
 \subsubsection{辅助观测量}
-除主指标外，评测脚本额外记录三项辅助量，用于结果讨论环节的辅助分析：
+除主指标外，评测端额外记录三项辅助量，用于结果讨论环节的辅助分析：
 \begin{itemize}
-    \item \textbf{超时率}：\texttt{TIMEOUT=5} 秒触发次数占总生成请求比例，反映死循环/过深递归等病态行为；
+    \item \textbf{超时率}：执行超时触发次数占总生成请求比例，反映死循环/过深递归等病态行为；
     \item \textbf{原始 solution 通过率}：用以监控执行器本身是否有环境污染；
-    \item \textbf{CoT 评测元数据}：\texttt{mode / use\_lora / lora\_path / few\_shot\_k}，每份 JSON 产物自动记录，便于后续回溯。
+    \item \textbf{CoT 评测元数据}：模式、是否挂载 LoRA、适配器来源与 few-shot 条数随产物自动留痕，便于后续回溯。
 \end{itemize}

@@ -13,7 +13,7 @@
 这一析因结构是本文方法侧的主要增量。
 
 \subsection{Few-shot CoT 在训练侧与推理侧的对称化}
-本文把 few-shot 示例同时注入训练 prompt 与推理 prompt，共享同一评分函数与同一候选池规则，并通过 \texttt{seed = 2026 + problem\_idx * 1000 + sample\_idx} 使评测侧抽样完全可复现。该对称化直接支撑「训练与推理 $k$ 同步放大是否带来净增益」「$\mathrm{H9} \gtrsim \mathrm{H10}$ 是否成立」等 5.3 节设问，突破了以往 few-shot 仅作用于推理侧的常见做法。
+本文把 few-shot 示例同时注入训练 prompt 与推理 prompt，共享同一评分函数与同一候选池规则，并通过将评测侧 seed 与题号、采样编号绑定使抽样完全可复现。该对称化直接支撑「训练与推理 $k$ 同步放大是否带来净增益」「$\mathrm{H9} \gtrsim \mathrm{H10}$ 是否成立」等 5.3 节设问，突破了以往 few-shot 仅作用于推理侧的常见做法。
 
 \subsection{两阶段 CoT 流水线的工程约束}
 为让 CoT 在 10 组评测中稳定产出可比较的 pass@$k$，本文在 4.4 节提出三项工程约束：
