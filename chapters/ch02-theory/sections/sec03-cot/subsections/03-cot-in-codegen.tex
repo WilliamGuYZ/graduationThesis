@@ -13,48 +13,48 @@
 \begin{figure}[!htb]
   \centering
   \begin{tikzpicture}[
-    node distance=2.5mm and 5mm,
-    col/.style={draw, rounded corners=2pt, align=center, minimum width=34mm, font=\scriptsize, inner sep=2pt},
-    sysn/.style={col, fill=black!8, minimum height=6mm},
-    usrn/.style={col, fill=blue!8, minimum height=6mm},
-    asst/.style={col, fill=green!10, minimum height=6mm},
-    ex/.style={col, fill=orange!12, minimum height=5mm, font=\tiny},
+    node distance=3mm and 18mm,
+    col/.style={draw, rounded corners=2pt, align=center, text width=36mm, font=\scriptsize, inner sep=3pt},
+    sysn/.style={col, fill=black!8},
+    usrn/.style={col, fill=blue!8},
+    asst/.style={col, fill=green!10},
+    ex/.style={col, fill=orange!12, font=\tiny},
     arr/.style={-{Stealth[length=2mm]}, thick},
-    title/.style={font=\footnotesize\bfseries},
+    title/.style={font=\footnotesize\bfseries, align=center, text width=40mm},
   ]
     % --- Direct ---
-    \node[title] (tD) {Direct};
-    \node[sysn, below=of tD] (sD) {System: expert programmer.\\ output only Python.};
-    \node[usrn, below=of sD] (uD) {User: 题目 + 「only output code」};
-    \node[asst, below=of uD] (aD) {Assistant: \texttt{```python ... ```}};
+    \node[title] (tD) {Direct\\(单阶段)};
+    \node[sysn, below=of tD] (sD) {System：\\You are an expert programmer.};
+    \node[usrn, below=of sD] (uD) {User：题目本体\\+「only output the code」};
+    \node[asst, below=of uD] (aD) {Assistant：\\\texttt{```python ... ```}};
     \draw[arr] (sD) -- (uD);
     \draw[arr] (uD) -- (aD);
 
     % --- CoT-ZS ---
-    \node[title, right=14mm of tD] (tZ) {CoT-ZS（两阶段）};
-    \node[sysn, below=of tZ] (sZ) {System: think step by step};
-    \node[usrn, below=of sZ] (uZ) {User: 题目 + 「step by step」};
-    \node[asst, below=of uZ] (rZ) {Stage-1: 推理步骤};
-    \node[asst, below=of rZ] (aZ) {Stage-2: 代码};
+    \node[title, right=of tD] (tZ) {CoT-ZS\\(两阶段)};
+    \node[sysn, below=of tZ] (sZ) {System：expert + 要求先编号推理后输出 Python};
+    \node[usrn, below=of sZ] (uZ) {User：题目本体\\+「Think step by step」};
+    \node[asst, below=of uZ] (rZ) {Stage-1 输出：\\编号推理步骤};
+    \node[asst, below=of rZ] (aZ) {Stage-2 输出：\\\texttt{```python ... ```}};
     \draw[arr] (sZ) -- (uZ);
     \draw[arr] (uZ) -- (rZ);
-    \draw[arr] (rZ) -- node[midway, right, font=\tiny]{回灌 reasoning} (aZ);
+    \draw[arr] (rZ) -- node[midway, right, font=\tiny, xshift=1mm]{拼接推理后续写} (aZ);
 
     % --- CoT-FS ---
-    \node[title, right=14mm of tZ] (tF) {CoT-FS$(k)$（两阶段+示例）};
-    \node[sysn, below=of tF] (sF) {System: same as CoT-ZS};
-    \node[ex, below=of sF] (e1) {示例 1: 题目 → 推理+代码};
-    \node[ex, below=of e1] (eN) {$\cdots$ 示例 $k$};
-    \node[usrn, below=of eN] (uF) {User: 目标题};
-    \node[asst, below=of uF] (rF) {Stage-1: 推理};
-    \node[asst, below=of rF] (aF) {Stage-2: 代码};
+    \node[title, right=of tZ] (tF) {CoT-FS$(k)$\\(两阶段 + $k$ 条示例)};
+    \node[sysn, below=of tF] (sF) {System：同 CoT-ZS};
+    \node[ex, below=of sF] (e1) {Few-shot 1：\\User 题 / Assistant 推理+代码};
+    \node[ex, below=of e1] (eN) {$\cdots$ Few-shot $k$};
+    \node[usrn, below=of eN] (uF) {User：目标题\\(模板同 CoT-ZS)};
+    \node[asst, below=of uF] (rF) {Stage-1：推理};
+    \node[asst, below=of rF] (aF) {Stage-2：代码};
     \draw[arr] (sF) -- (e1);
     \draw[arr] (e1) -- (eN);
     \draw[arr] (eN) -- (uF);
     \draw[arr] (uF) -- (rF);
     \draw[arr] (rF) -- (aF);
   \end{tikzpicture}
-  \caption{三种推理侧 prompt 结构对比：Direct 单阶段直出代码；CoT-ZS 通过 system 指令触发两阶段推理；CoT-FS 在 CoT-ZS 基础上前置 $k$ 条示例}
+  \caption{三种推理侧 prompt 结构对比：Direct 单阶段直出代码；CoT-ZS 通过 system 指令触发两阶段推理（先输出推理、再拼接续写代码）；CoT-FS 在 CoT-ZS 基础上前置 $k$ 条「题目—推理—代码」对话示例}
   \label{fig:ch2-cot-comparison}
 \end{figure}
 

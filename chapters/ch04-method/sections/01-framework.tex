@@ -67,10 +67,10 @@
     \item \textbf{评测语料}：\texttt{data/processed/KodCode\_eval.jsonl}（三份评测脚本的 \texttt{DATASET\_PATH}）；
     \item \textbf{Few-shot 示例库（评测默认）}：\texttt{data/processed/KodCode\_train.jsonl}（\texttt{eval\_lora\_cot\_passk.py} 的 \texttt{--few-shot-pool} 默认值，与训练集同源，题面与评测集按划分不相交）；
     \item \textbf{基座权重}：\texttt{models/CodeGeeX4-ALL-9B/}；
-    \item \textbf{适配器落盘}：\texttt{train/outputs/<时间戳>/lora\_adapter/}，指针写入 \texttt{train/latest\_lora\_adapter.txt}、\texttt{train/latest\_lora\_cot\_zs\_adapter.txt}、\texttt{train/latest\_lora\_cot\_fs\{k\}\_adapter.txt}；
+    \item \textbf{适配器落盘}：\texttt{train/outputs/<时间戳>/lora\_adapter/}，指针写入 \texttt{train/latest\_lora\_adapter.txt}、\texttt{train/latest\_lora\_cot\_\allowbreak zs\_adapter.txt}、\texttt{train/latest\_lora\_cot\_fs\{k\}\_adapter.txt}；
     \item \textbf{评测结果}：\texttt{evaluation/results/}，文件名由脚本 \texttt{--result-suffix} 与模式前缀共同决定（与 \texttt{scripts/train\_eval.sh} 中各 \texttt{RUN\_H*} 块一致）；
     \item \textbf{可调 CLI（训练）}：\texttt{train/train.py} 与 \texttt{train/train\_cot.py} 支持 \texttt{--data-path}、\texttt{--max-length} 覆盖默认 JSONL 与截断上限（默认值与显存不足时的下调策略见 \texttt{README.md}）；
-    \item \textbf{评测前置检查}：三份 \texttt{evaluation/*.py} 在加载 vLLM 前会校验 \texttt{models/CodeGeeX4-ALL-9B/} 与评测 JSONL 存在；\texttt{eval\_lora\_passk.py} 另校验 LoRA 目录有效。
+    \item \textbf{评测前置检查}：三份 \texttt{evaluation/*.py} 在加载 vLLM 前会校验 \texttt{models/\allowbreak CodeGeeX4-ALL-9B/} 与评测 JSONL 存在；\texttt{eval\_lora\_passk.py} 另校验 LoRA 目录有效。
 \end{itemize}
 
 \subsection{合法性约束与有效组合}
@@ -97,51 +97,59 @@
   \centering
   \caption{H1--H10 实验矩阵：训练侧 $\times$ 推理侧与评测入口}
   \label{tab:ch4-matrix}
-  \footnotesize
-  \setlength{\tabcolsep}{3pt}
-  \begin{tabular}{clllll}
+  \scriptsize
+  \setlength{\tabcolsep}{2.5pt}
+  \renewcommand{\arraystretch}{1.2}
+  \hspace*{-2.5cm}%
+  \begin{tabular}{c c c p{5cm} p{9cm}}
     \toprule
     编号 & 训练侧 & 推理侧 & LoRA 指针 & 评测脚本 \\
     \midrule
-    H1  & Base            & Direct      & ---                                    & \texttt{eval\_base\_passk.py --result-suffix h1\_base\_direct} \\
-    H2  & Base            & CoT-ZS      & ---                                    & \texttt{eval\_lora\_cot\_passk.py --lora-path NONE --few-shot-k 0} \\
-    H3  & Base            & CoT-FS($k$) & ---                                    & \texttt{eval\_lora\_cot\_passk.py --lora-path NONE --few-shot-k k} \\
-    H4  & LoRA\_code      & Direct      & \texttt{latest\_lora\_adapter.txt}       & \texttt{eval\_lora\_passk.py} \\
-    H5  & LoRA\_code      & CoT-ZS      & \texttt{latest\_lora\_adapter.txt}       & \texttt{eval\_lora\_cot\_passk.py --lora-path <code> --few-shot-k 0} \\
-    H6  & LoRA\_code      & CoT-FS($k$) & \texttt{latest\_lora\_adapter.txt}       & \texttt{eval\_lora\_cot\_passk.py --lora-path <code> --few-shot-k k} \\
-    H7  & LoRA\_cot\_zs   & Direct      & \texttt{latest\_lora\_cot\_zs\_adapter.txt} & \texttt{eval\_lora\_passk.py --lora-path <cot\_zs>} \\
-    H8  & LoRA\_cot\_zs   & CoT-ZS      & \texttt{latest\_lora\_cot\_zs\_adapter.txt} & \texttt{eval\_lora\_cot\_passk.py --few-shot-k 0} \\
-    H9  & LoRA\_cot\_fs($k$) & Direct   & \texttt{latest\_lora\_cot\_fs\{k\}\_adapter.txt} & \texttt{eval\_lora\_passk.py --lora-path <cot\_fs>} \\
-    H10 & LoRA\_cot\_fs($k$) & CoT-FS($k$) & \texttt{latest\_lora\_cot\_fs\{k\}\_adapter.txt} & \texttt{eval\_lora\_cot\_passk.py --few-shot-k k} \\
+    H1  & Base               & Direct      & ---                                       & eval\_base\_passk.py \\
+    H2  & Base               & CoT-ZS      & ---                                       & eval\_lora\_cot\_passk.py  --lora-path NONE  --few-shot-k 0 \\
+    H3  & Base               & CoT-FS($k$) & ---                                       & eval\_lora\_cot\_passk.py  --lora-path NONE  --few-shot-k k \\
+    H4  & LoRA\_code         & Direct      & latest\_lora\_adapter.txt        & eval\_lora\_passk.py  --lora-path <code> \\
+    H5  & LoRA\_code         & CoT-ZS      & latest\_lora\_adapter.txt        & eval\_lora\_cot\_passk.py  --lora-path <code>  --few-shot-k 0 \\
+    H6  & LoRA\_code         & CoT-FS($k$) & latest\_lora\_adapter.txt        & eval\_lora\_cot\_passk.py  --lora-path <code>  --few-shot-k k \\
+    H7  & LoRA\_cot\_zs      & Direct      & latest\_lora\_cot\_zs\_adapter.txt & eval\_lora\_passk.py  --lora-path <cot\_zs> \\
+    H8  & LoRA\_cot\_zs      & CoT-ZS      & latest\_lora\_cot\_zs\_adapter.txt & eval\_lora\_cot\_passk.py  --lora-path <cot\_zs>  --few-shot-k 0 \\
+    H9  & LoRA\_cot\_fs($k$) & Direct      & latest\_lora\_cot\_fs\{k\}\_adapter.txt & eval\_lora\_passk.py  --lora-path <cot\_fs> \\
+    H10 & LoRA\_cot\_fs($k$) & CoT-FS($k$) & latest\_lora\_cot\_fs\{k\}\_adapter.txt & eval\_lora\_cot\_passk.py  --lora-path <cot\_fs>  --few-shot-k k \\
     \bottomrule
   \end{tabular}
 \end{table}
+
 
 \subsection{整体实验流水线}
 \begin{itemize}
     \item \textbf{目标}：10 组结果可复现、相互可比；
     \item \textbf{训练阶段}：\texttt{train.py} 产出 \texttt{LoRA\_code}；\texttt{train\_cot.py}（$k{=}0$ / $k{>}0$）分别产出 \texttt{LoRA\_cot\_zs}、\texttt{LoRA\_cot\_fs($k$)}；各脚本将最新适配器目录写入独立指针文件；
-    \item \textbf{评测阶段}：按 \texttt{scripts/train\_eval.sh} 中开关调用三份评测脚本，按需读取（1c）所列指针；结果落盘路径见（1c），其中 H1 使用 \texttt{eval\_base\_passk\_<suffix>.json}，其余组为 \texttt{eval\_lora\_passk\_<suffix>.json} 或 \texttt{eval\_lora\_cot\_passk\_<suffix>.json}；
+    \item \textbf{评测阶段}：按 \texttt{scripts/train\_eval.sh} 中开关调用三份评测脚本，按需读取（1c）所列指针；结果落盘路径见（1c），其中 H1 使用 \texttt{eval\_base\_passk\_\allowbreak <suffix>.json}，其余组为 \texttt{eval\_lora\_passk\_<suffix>.json} 或 \texttt{eval\_lora\_cot\_passk\_<suffix>.json}；
     \item \textbf{示意图}：数据流见图~\ref{fig:ch4-pipeline}。
 \end{itemize}
 
 \begin{figure}[!htb]
   \centering
+  \hspace*{-1cm}%
   \begin{tikzpicture}[
-    node distance=5mm and 6mm,
-    box/.style={draw, rounded corners=2pt, align=center, minimum height=8mm, minimum width=24mm, font=\footnotesize},
-    lbl/.style={font=\scriptsize\itshape, align=center},
+    node distance=5mm and 5mm,
+    box/.style={draw, rounded corners=2pt, align=center, minimum height=10mm, minimum width=28mm, font=\footnotesize},
+    ada/.style={box, fill=blue!6},
+    eva/.style={box, fill=green!8, minimum width=32mm},
+    res/.style={box, fill=orange!10, minimum width=42mm},
     arr/.style={-{Stealth[length=2mm]}, thick},
+    hub/.style={circle, draw, inner sep=0pt, minimum size=2.5mm, fill=black!40},
   ]
-    % row 1: training
-    \node[box] (d) {\texttt{KodCode\_train.jsonl}};
-    \node[box, right=of d] (t1) {\texttt{train.py}};
-    \node[box, right=of t1] (t2) {\texttt{train\_cot.py}\\ \scriptsize($k{=}0$)};
-    \node[box, right=of t2] (t3) {\texttt{train\_cot.py}\\ \scriptsize($k$)};
+    % row 1: data + training scripts
+    \node[box] (d) {\texttt{KodCode\_}\\\texttt{train.jsonl}};
+    \node[box, right=of d] (t1) {\texttt{train.py}\\\scriptsize(纯代码)};
+    \node[box, right=of t1] (t2) {\texttt{train\_cot.py}\\\scriptsize($k{=}0$)};
+    \node[box, right=of t2] (t3) {\texttt{train\_cot.py}\\\scriptsize($k$)};
 
-    \node[box, below=9mm of t1] (a1) {\texttt{LoRA\_code}};
-    \node[box, below=9mm of t2] (a2) {\texttt{LoRA\_cot\_zs}};
-    \node[box, below=9mm of t3] (a3) {\texttt{LoRA\_cot\_fs($k$)}};
+    % row 2: adapters
+    \node[ada, below=10mm of t1] (a1) {\texttt{LoRA\_code}};
+    \node[ada, below=10mm of t2] (a2) {\texttt{LoRA\_cot\_zs}};
+    \node[ada, below=10mm of t3] (a3) {\texttt{LoRA\_cot\_fs($k$)}};
 
     \draw[arr] (d) -- (t1);
     \draw[arr] (d.east) to [bend left=10] (t2.west);
@@ -150,19 +158,22 @@
     \draw[arr] (t2) -- (a2);
     \draw[arr] (t3) -- (a3);
 
-    % row 2: evaluation
-    \node[box, below=11mm of a1, minimum width=34mm] (e1) {\texttt{eval\_base\_passk.py}\\ \scriptsize H1};
-    \node[box, right=of e1, minimum width=34mm] (e2) {\texttt{eval\_lora\_passk.py}\\ \scriptsize H4 / H7 / H9};
-    \node[box, right=of e2, minimum width=34mm] (e3) {\texttt{eval\_lora\_cot\_passk.py}\\ \scriptsize H2 / H3 / H5 / H6 / H8 / H10};
+    % hub between adapters and eval (汇流点)
+    \node[hub, below=6mm of a2] (h) {};
+    \draw[arr] (a1.south) -- (h);
+    \draw[arr] (a2.south) -- (h);
+    \draw[arr] (a3.south) -- (h);
 
-    \draw[arr] (a1.south) to [bend right=10] (e2.north);
-    \draw[arr] (a2.south) to [bend right=10] (e2.north);
-    \draw[arr] (a3.south) to [bend right=10] (e2.north);
-    \draw[arr] (a1.south) to [bend right=20] (e3.north);
-    \draw[arr] (a2.south) to [bend right=10] (e3.north);
-    \draw[arr] (a3.south) to [bend left=10] (e3.north);
+    % row 3: evaluation scripts
+    \node[eva, below=14mm of a1] (e1) {\texttt{eval\_base\_}\\\texttt{passk.py}\\\scriptsize H1};
+    \node[eva, below=14mm of a2] (e2) {\texttt{eval\_lora\_}\\\texttt{passk.py}\\\scriptsize H4 / H7 / H9};
+    \node[eva, below=14mm of a3] (e3) {\texttt{eval\_lora\_cot\_}\\\texttt{passk.py}\\\scriptsize H2 / H3 / H5\\\scriptsize H6 / H8 / H10};
 
-    \node[box, below=9mm of e2, minimum width=50mm] (r) {\texttt{evaluation/results/eval\_*\_<suffix>.json}};
+    \draw[arr] (h) to [bend right=15] (e2.north);
+    \draw[arr] (h) to [bend left=15]  (e3.north);
+
+    % row 4: result
+    \node[res, below=9mm of e2] (r) {\texttt{results/}\\\texttt{eval\_*\_<suffix>.json}};
     \draw[arr] (e1.south) to [bend right=10] (r.west);
     \draw[arr] (e2) -- (r);
     \draw[arr] (e3.south) to [bend left=10] (r.east);
@@ -173,7 +184,7 @@
 
 \subsection{结果命名与主要对照口径}
 \begin{itemize}
-    \item \textbf{文件命名}：\texttt{eval\_base\_passk\_<suffix>.json}（H1）或 \texttt{eval\_lora\_passk\_<suffix>.json} / \texttt{eval\_lora\_cot\_passk\_<suffix>.json}（其余组），\texttt{<suffix>} 与 \texttt{scripts/train\_eval.sh} 中 \texttt{--result-suffix} 一致；
+    \item \textbf{文件命名}：\texttt{eval\_base\_passk\_<suffix>.json}（H1）或 \texttt{eval\_lora\_\allowbreak passk\_<suffix>.json} / \texttt{eval\_lora\_cot\_passk\_<suffix>.json}（其余组），\texttt{<suffix>} 与 \texttt{scripts/train\_eval.sh} 中 \texttt{--result-suffix} 一致；
     \item \textbf{元数据}：CoT 评测 JSON 另存 \texttt{mode}、\texttt{use\_lora}、\texttt{lora\_path}、\texttt{few\_shot\_k} 等字段，便于回溯；
     \item \textbf{主效应}：以 H1 为共同基线，分别通过 $\{$H4, H7, H9$\}$ 抽取训练侧主效应，通过 $\{$H2, H3$\}$ 抽取推理侧主效应；
     \item \textbf{交互效应}：由 $(H8-H7)-(H2-H1)$ 与 $(H10-H9)-(H3-H1)$ 两条差分差分量，判定 LoRA 与 CoT 是否正交可加；

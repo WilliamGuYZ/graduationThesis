@@ -4,6 +4,6 @@
 
 \begin{itemize}
     \item \textbf{顺序划分（\texttt{--no-shuffle}）}：样本与原始行号一一对应，便于事后回溯，并保证多轮训练的评测集严格一致；
-    \item \textbf{名义上界}：在评测集上以原始 \texttt{solution} 配其 \texttt{test} 跑 \texttt{validate\_code\_with\_test}，参考解答 pass@$1$ 实测为 $0.996$，作为后续模型侧实验的名义上界；
-    \item \textbf{与实验矩阵的耦合}：H1--H10 共用同一评测集；训练侧 \texttt{LoRA\_code} / \texttt{LoRA\_cot\_zs} / \texttt{LoRA\_cot\_fs($k$)} 共用同一训练集，仅在「是否使用 \texttt{thought\_step}」「是否前置 $k$ 条 few-shot」两个维度切换。训练集与评测集顺序不相交，是析因主效应与交互效应可解释的最低前提。
+    \item \textbf{名义上界}：在评测集上以原始 \texttt{solution} 配其 \texttt{test} 跑 \texttt{validate\_code\_\allowbreak with\_test}，参考解答 pass@$1$ 实测为 $0.996$，作为后续模型侧实验的名义上界；
+    \item \textbf{与实验矩阵的耦合}：H1--H10 共用同一评测集；训练侧 \texttt{LoRA\_code} / \texttt{LoRA\_cot\_\allowbreak zs} / \texttt{LoRA\_cot\_fs($k$)} 共用同一训练集，仅在是否使用 \texttt{thought\_step}、是否前置 $k$ 条 few-shot两个维度切换。训练集与评测集顺序不相交，是析因主效应与交互效应可解释的最低前提。
 \end{itemize}

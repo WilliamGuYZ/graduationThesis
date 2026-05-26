@@ -9,16 +9,19 @@
   \caption{三种 LoRA 适配器的监督目标与训练 prompt 配置}
   \label{tab:ch4-lora-target}
   \footnotesize
-  \begin{tabular}{llll}
+  \setlength{\tabcolsep}{5pt}
+  \renewcommand{\arraystretch}{1.2}
+  \begin{tabular}{c l c p{5cm}}
     \toprule
-    适配器 & assistant 回复内容 & 训练 prompt few-shot & 产出脚本 \\
+    适配器 & assistant 回复内容 & few-shot & 产出脚本 \\
     \midrule
-    \texttt{LoRA\_code}       & \texttt{solution}（纯代码块） & 无 & \texttt{train/train.py} \\
-    \texttt{LoRA\_cot\_zs}    & \texttt{thought\_step} + \texttt{solution} & 0 例 & \texttt{train\_cot.py --num-few-shots 0} \\
-    \texttt{LoRA\_cot\_fs($k$)} & \texttt{thought\_step} + \texttt{solution} & $k$ 例 & \texttt{train\_cot.py --num-few-shots k} \\
+    LoRA\_code  &  solution（纯代码块）  &  无  &  train/train.py \\
+    LoRA\_cot\_zs  &  thought\_step + solution  &  0 例  &  train\_cot.py --num-few-shots 0 \\
+    LoRA\_cot\_fs($k$)  &  thought\_step + solution  &  $k$ 例  &  train\_cot.py --num-few-shots k \\
     \bottomrule
   \end{tabular}
 \end{table}
+
 
 \subsubsection{Chat 样本结构}
 \begin{itemize}
